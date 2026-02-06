@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/shared_widgets.dart';
 import '../theme/app_theme.dart';
 
-// Task 7: Language Selection Screen
 class LanguageSelectionScreen extends StatelessWidget {
   final Function(Locale) onLanguageSelected;
 
@@ -19,17 +17,17 @@ class LanguageSelectionScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingLarge),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
                 'Choose Your Language',
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 'अपनी भाषा चुनें',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -37,15 +35,15 @@ class LanguageSelectionScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppTheme.spacingXLarge),
+              const SizedBox(height: 30),
               
-              // Language options in a nice grid
+              // Language options in grid - BETTER PROPORTIONS
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 1.4, // Better ratio for card height
                   children: [
                     _buildLanguageCard(context, 'English', 'en', '🌐'),
                     _buildLanguageCard(context, 'हिन्दी', 'hi', '🇮🇳'),
@@ -71,30 +69,33 @@ class LanguageSelectionScreen extends StatelessWidget {
     String emoji,
   ) {
     return Card(
+      elevation: 2,
       child: InkWell(
         onTap: () {
           onLanguageSelected(Locale(languageCode));
           Navigator.pushReplacementNamed(context, '/crops');
         },
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 emoji,
-                style: const TextStyle(fontSize: 28),
+                style: const TextStyle(fontSize: 40), // Bigger emoji
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 10),
               Text(
                 languageName,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.primaryGreen,
                 ),
                 textAlign: TextAlign.center,
+                overflow: TextOverflow.visible,
+                softWrap: true,
               ),
             ],
           ),
