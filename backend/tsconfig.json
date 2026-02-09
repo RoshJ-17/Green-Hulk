@@ -40,6 +40,12 @@
             ],
             "@diagnosis/*": [
                 "src/diagnosis/*"
+            ],
+            "@localization/*": [
+                "src/localization/*"
+            ],
+            "@treatments/*": [
+                "src/treatments/*"
             ]
         }
     },

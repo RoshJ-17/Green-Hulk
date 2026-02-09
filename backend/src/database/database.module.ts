@@ -4,6 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScanRecord } from './entities/scan-record.entity';
 import { TreatmentPlan } from './entities/treatment-plan.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
+import { UserPreferencesService } from './services/user-preferences.service';
+import { ScanHistoryService } from './services/scan-history.service';
+import { StorageUtilityService } from './services/storage-utility.service';
 
 @Module({
     imports: [
@@ -20,6 +23,16 @@ import { UserPreferences } from './entities/user-preferences.entity';
         }),
         TypeOrmModule.forFeature([ScanRecord, TreatmentPlan, UserPreferences]),
     ],
-    exports: [TypeOrmModule],
+    providers: [
+        UserPreferencesService,
+        ScanHistoryService,
+        StorageUtilityService,
+    ],
+    exports: [
+        TypeOrmModule,
+        UserPreferencesService,
+        ScanHistoryService,
+        StorageUtilityService,
+    ],
 })
 export class DatabaseModule { }

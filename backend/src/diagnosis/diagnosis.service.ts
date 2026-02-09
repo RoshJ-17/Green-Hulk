@@ -7,7 +7,7 @@ import { OodDetectorService } from '@validators/ood-detector.service';
 import { CropValidatorService } from '@validators/crop-validator.service';
 import { PredictionValidatorService } from '@validators/prediction-validator.service';
 import { DiagnosisResult } from '@common/types/diagnosis-result.types';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 @Injectable()
 export class DiagnosisService {
