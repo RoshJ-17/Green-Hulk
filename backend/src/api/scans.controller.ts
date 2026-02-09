@@ -1,109 +1,91 @@
 import {
     Controller,
     Get,
-    Delete,
-    Param,
+    Post,
+    Body,
     Query,
-    NotFoundException,
     ParseIntPipe,
-    Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ScanHistoryService } from '@database/services/scan-history.service';
+import { StorageUtilityService } from '@database/services/storage-utility.service';
 import { ScanRecord } from '@database/entities/scan-record.entity';
 
-@ApiTags('scans')
+/**
+ * Scans Controller
+ * Task 2.7.4: Scan history API endpoints
+ */
+@ApiTags('Scans')
 @Controller('api/scans')
 export class ScansController {
-    private readonly logger = new Logger(ScansController.name);
-
     constructor(
-        @InjectRepository(ScanRecord)
-        private readonly scanRepository: Repository<ScanRecord>,
+        private readonly scanHistoryService: ScanHistoryService,
+        private readonly storageService: StorageUtilityService,
     ) { }
 
-    @Get()
+    /**
+     * Get scan history
+     * Task 2.7.4: Retrieve scan history
+     */
+    @Get('history')
     @ApiOperation({ summary: 'Get scan history' })
-    @ApiQuery({ name: 'page', required: false, type: Number })
-    @ApiQuery({ name: 'limit', required: false, type: Number })
-    @ApiQuery({ name: 'cropType', required: false, type: String })
-    @ApiResponse({ status: 200, description: 'Paginated scan history' })
-    async getScans(
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 20,
+    @ApiResponse({ status: 200, description: 'Returns scan history' })
+    async getScanHistory(
         @Query('cropType') cropType?: string,
+        @Query('limit', ParseIntPipe) limit: number = 50,
     ) {
-        const skip = (page - 1) * limit;
-
-        const queryBuilder = this.scanRepository
-            .createQueryBuilder('scan')
-            .orderBy('scan.timestamp', 'DESC')
-            .skip(skip)
-            .take(limit);
-
-        if (cropType) {
-            queryBuilder.where('scan.cropType = :cropType', { cropType });
-        }
-
-        const [scans, total] = await queryBuilder.getManyAndCount();
-
-        return {
-            data: scans,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-            },
-        };
+        return this.scanHistoryService.getScanHistory(cropType, limit);
     }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get specific scan by ID' })
-    @ApiResponse({ status: 200, description: 'Scan record details' })
-    @ApiResponse({ status: 404, description: 'Scan not found' })
-    async getScanById(@Param('id', ParseIntPipe) id: number) {
-        const scan = await this.scanRepository.findOne({ where: { id } });
-
-        if (!scan) {
-            throw new NotFoundException(`Scan with ID ${id} not found`);
-        }
-
-        return scan;
+    /**
+     * Get recent scans
+     */
+    @Get('recent')
+    @ApiOperation({ summary: 'Get recent scans' })
+    async getRecentScans(@Query('limit', ParseIntPipe) limit: number = 10) {
+        return this.scanHistoryService.getRecentScans(limit);
     }
 
-    @Delete(':id')
-    @ApiOperation({ summary: 'Delete scan record' })
-    @ApiResponse({ status: 200, description: 'Scan deleted successfully' })
-    @ApiResponse({ status: 404, description: 'Scan not found' })
-    async deleteScan(@Param('id', ParseIntPipe) id: number) {
-        const result = await this.scanRepository.delete(id);
-
-        if (result.affected === 0) {
-            throw new NotFoundException(`Scan with ID ${id} not found`);
-        }
-
-        this.logger.log(`Scan record deleted: ID ${id}`);
-
-        return {
-            message: 'Scan deleted successfully',
-            id,
-        };
+    /**
+     * Sync scan from mobile device
+     * Task 2.7.4: Sync endpoint for offline scans
+     */
+    @Post('sync')
+    @ApiOperation({ summary: 'Sync scan record from mobile' })
+    @ApiResponse({ status: 201, description: 'Scan synced successfully' })
+    async syncScan(@Body() scanData: Partial<ScanRecord>) {
+        return this.scanHistoryService.syncScanFromMobile(scanData);
     }
 
-    @Get('unsynced/list')
-    @ApiOperation({ summary: 'Get unsynced scan records' })
-    @ApiResponse({ status: 200, description: 'List of unsynced scans' })
-    async getUnsyncedScans() {
-        const scans = await this.scanRepository.find({
-            where: { isSynced: false },
-            order: { timestamp: 'DESC' },
-        });
+    /**
+     * Get storage information
+     * Task 4.4.4: Storage check
+     */
+    @Get('storage-info')
+    @ApiOperation({ summary: 'Get storage information' })
+    @ApiResponse({
+        status: 200,
+        description: 'Returns storage size and file count',
+    })
+    async getStorageInfo() {
+        return this.storageService.getStorageInfo();
+    }
 
-        return {
-            data: scans,
-            count: scans.length,
-        };
+    /**
+     * Get scan statistics
+     */
+    @Get('stats')
+    @ApiOperation({ summary: 'Get scan statistics' })
+    async getScanStats() {
+        return this.scanHistoryService.getScanStats();
+    }
+
+    /**
+     * Search scans by disease
+     */
+    @Get('search')
+    @ApiOperation({ summary: 'Search scans by disease name' })
+    async searchByDisease(@Query('disease') disease: string) {
+        return this.scanHistoryService.searchByDisease(disease);
     }
 }

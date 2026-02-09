@@ -26,8 +26,10 @@ export class LabelLoaderService implements OnModuleInit {
         this.logger.log('Initializing label loader...');
         const result = await this.loadLabels();
         if (!result.isSuccess) {
-            this.logger.error(`Failed to load labels: ${result.error}`);
-            throw new Error(`Label initialization failed: ${result.error}`);
+            this.logger.warn(`Labels not loaded: ${result.error}`);
+            this.logger.warn('Server will start without label mapping capability');
+            // Don't throw - allow server to start without labels
+            return;
         }
         this.logger.log(
             `Labels loaded successfully: ${result.classCount} classes, ${result.crops?.size} crops`,

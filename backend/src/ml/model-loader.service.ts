@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
@@ -34,8 +34,11 @@ export class ModelLoaderService implements OnModuleInit {
         this.logger.log('Initializing model loader...');
         const result = await this.loadModel();
         if (!result.isSuccess) {
-            this.logger.error(`Failed to load model: ${result.error}`);
-            throw new Error(`Model initialization failed: ${result.error}`);
+            this.logger.warn(`Model not loaded: ${result.error}`);
+            this.logger.warn('Server will start without ML inference capability');
+            this.logger.warn('Add model files and restart to enable diagnosis features');
+            // Don't throw - allow server to start without model
+            return;
         }
         this.logger.log('Model loaded successfully');
         this.logger.log(
@@ -75,8 +78,8 @@ export class ModelLoaderService implements OnModuleInit {
             this.model = await tf.loadGraphModel(`file://${modelJsonPath}`);
 
             // Step 4: Verify model architecture
-            const inputShape = this.model.inputs[0].shape;
-            const outputShape = this.model.outputs[0].shape;
+            const inputShape = this.model.inputs[0].shape!;
+            const outputShape = this.model.outputs[0].shape!;
 
             this.logger.log(`Model input shape: ${inputShape}`);
             this.logger.log(`Model output shape: ${outputShape}`);
