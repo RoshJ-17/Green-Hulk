@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MODEL_PATH=/app/assets/model/model.json
+      - LABELS_PATH=/app/assets/class_indices.json
+      - DB_PATH=/app/data/plant-disease.db
+    volumes:
+      - ./assets:/app/assets
+      - ./data:/app/data
+    restart: unless-stopped

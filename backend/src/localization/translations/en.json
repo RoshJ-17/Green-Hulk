@@ -1,0 +1,106 @@
+{
+  "home": {
+    "title": "Plant Doctor",
+    "subtitle": "Your farming companion for healthy crops",
+    "select_crop": "Select Your Crop",
+    "scan": "Scan Plant",
+    "history": "Scan History",
+    "settings": "Settings"
+  },
+  "crops": {
+    "tomato": "Tomato",
+    "potato": "Potato",
+    "pepper": "Pepper Bell",
+    "corn": "Corn (Maize)",
+    "rice": "Rice",
+    "wheat": "Wheat",
+    "select_placeholder": "Choose your crop type..."
+  },
+  "scan": {
+    "title": "Scan Your Plant",
+    "take_photo": "Take Photo",
+    "upload_photo": "Upload from Gallery",
+    "analyzing": "Analyzing...",
+    "please_wait": "Please wait while we diagnose your plant",
+    "tips": {
+      "title": "For Best Results:",
+      "lighting": "Use natural daylight",
+      "distance": "Hold phone 6-12 inches away",
+      "focus": "Ensure affected area is in focus",
+      "background": "Simple background works best"
+    }
+  },
+  "diagnosis": {
+    "result_title": "Diagnosis Result",
+    "disease_detected": "Disease Detected",
+    "confidence": "Confidence",
+    "severity": "Severity",
+    "view_treatment": "View Treatment",
+    "save_result": "Save Result",
+    "scan_again": "Scan Again",
+    "healthy": "Healthy",
+    "warnings": {
+      "low_confidence": "Low confidence - Consider retaking photo",
+      "poor_quality": "Image quality is poor",
+      "wrong_crop": "Detected crop doesn't match selection"
+    }
+  },
+  "treatment": {
+    "title": "Treatment Plan",
+    "chemical": "Chemical Treatment",
+    "organic": "Organic Treatment",
+    "home_remedy": "Home Remedies",
+    "prevention": "Prevention Tips",
+    "immediate_steps": "Immediate Steps",
+    "steps_today": "What to do today",
+    "steps_week": "What to do this week",
+    "safety_warning": "Safety Warnings",
+    "effectiveness": "Effectiveness",
+    "filter_organic": "Organic Only"
+  },
+  "history": {
+    "title": "Scan History",
+    "recent": "Recent Scans",
+    "view_details": "View Details",
+    "delete": "Delete",
+    "empty": "No scan history yet",
+    "synced": "Synced",
+    "not_synced": "Not synced"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "prefer_organic": "Prefer Organic Treatments",
+    "storage": "Storage",
+    "storage_used": "Storage Used",
+    "clear_cache": "Clear Cache",
+    "about": "About"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "errors": {
+    "network": "No internet connection",
+    "camera": "Camera permission required",
+    "storage": "Storage permission required",
+    "unknown": "Something went wrong",
+    "retry": "Retry"
+  },
+  "audio": {
+    "welcome": "Welcome to Plant Doctor!",
+    "select_crop": "Please select your crop type.",
+    "take_photo": "Take a clear photo of the affected plant area.",
+    "diagnosing": "Analyzing your plant image...",
+    "view_treatment": "View treatment recommendations for your plant."
+  }
+}
