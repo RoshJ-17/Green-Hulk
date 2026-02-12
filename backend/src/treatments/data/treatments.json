@@ -1,0 +1,25 @@
+{
+    "Apple___Apple_scab": {
+        "disease_name": "Apple Scab",
+        "crop": "Apple",
+        "treatments": [
+            {
+                "id": "t1",
+                "is_organic": true,
+                "effectiveness": 0.8,
+                "steps": [
+                    {
+                        "timeframe": "today",
+                        "description": "Remove infected leaves."
+                    }
+                ]
+            }
+        ],
+        "home_remedies": [
+            "Baking soda spray"
+        ],
+        "prevention": [
+            "Plant resistant varieties"
+        ]
+    }
+}
