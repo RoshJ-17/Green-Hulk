@@ -59,10 +59,7 @@ export class ImageProcessorService {
                 height: size,
             });
 
-            // Step 3: Brightness normalization (using sharp's normalize)
-            image = image.normalize();
-
-            // Step 4: Resize to 224x224 with cubic interpolation
+            // Step 3: Resize to 224x224 with cubic interpolation
             image = image.resize(this.INPUT_SIZE, this.INPUT_SIZE, {
                 kernel: sharp.kernel.cubic,
             });
@@ -97,8 +94,9 @@ export class ImageProcessorService {
         let bufferIndex = 0;
 
         for (let i = 0; i < buffer.length; i++) {
-            // Normalize to [0, 1]
-            float32Data[bufferIndex++] = buffer[i] / 255.0;
+            // Normalize to [-1, 1] range (Standard for MobileNet)
+            // (pixel - 127.5) / 127.5
+            float32Data[bufferIndex++] = (buffer[i] - 127.5) / 127.5;
         }
 
         return float32Data;

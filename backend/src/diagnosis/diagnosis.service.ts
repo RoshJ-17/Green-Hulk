@@ -92,6 +92,16 @@ export class DiagnosisService {
             const maxIndex = this.getMaxIndex(probabilities);
             const confidence = probabilities[maxIndex];
 
+            // Log top 3 predictions for debugging
+            const top3 = probabilities
+                .map((prob, index) => ({ prob, label: labels[index] }))
+                .sort((a, b) => b.prob - a.prob)
+                .slice(0, 3);
+
+            this.logger.debug(
+                `Top 3 predictions: ${top3.map(p => `${p.label} (${(p.prob * 100).toFixed(1)}%)`).join(', ')}`
+            );
+
             this.logger.debug(
                 `Top prediction: index ${maxIndex}, confidence ${(confidence * 100).toFixed(2)}%`,
             );
