@@ -37,6 +37,9 @@ dependencies:
   connectivity_plus: ^5.0.2
   share_plus: ^7.2.2
   audioplayers: ^5.2.1
+  http: ^1.2.0
+  http_parser: ^4.0.2
+  mime: ^1.0.4
 
   flutter:
     sdk: flutter
