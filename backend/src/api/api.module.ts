@@ -4,6 +4,7 @@ import { ScansController } from './scans.controller';
 import { PreferencesController } from './preferences.controller';
 import { LocalizationController } from './localization.controller';
 import { TreatmentsController } from './treatments.controller';
+import { HistoryController } from './history.controller';
 import { DiagnosisModule } from '@diagnosis/diagnosis.module';
 import { DatabaseModule } from '@database/database.module';
 import { LocalizationModule } from '@localization/localization.module';
@@ -26,6 +27,7 @@ import { MlModule } from '@ml/ml.module';
         PreferencesController,
         LocalizationController,
         TreatmentsController,
+        HistoryController,
     ],
 })
 export class ApiModule { }

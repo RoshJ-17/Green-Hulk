@@ -8,6 +8,7 @@ import { ImageModule } from './image/image.module';
 import { ValidatorsModule } from './validators/validators.module';
 import { LocalizationModule } from './localization/localization.module';
 import { TreatmentsModule } from './treatments/treatments.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { TreatmentsModule } from './treatments/treatments.module';
         DiagnosisModule,
         LocalizationModule,
         TreatmentsModule,
+        AuthModule,
         ApiModule,
     ],
 })

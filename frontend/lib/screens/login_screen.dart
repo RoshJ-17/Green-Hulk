@@ -1,8 +1,46 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+    
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final success = await AuthService.login(email, password);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/language');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login failed. Please check credentials.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +65,7 @@ class LoginScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                              color: AppTheme.primaryGreen.withOpacity(0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -39,7 +77,6 @@ class LoginScreen extends StatelessWidget {
                             'assets/app_icon.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              // Fallback
                               return Container(
                                 decoration: BoxDecoration(
                                   color: AppTheme.primaryGreen,
@@ -100,16 +137,17 @@ class LoginScreen extends StatelessWidget {
                 
                 // Email Field
                 TextField(
+                  controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: 'Phone Number or Email',
-                    prefixIcon: const Icon(Icons.person_outline, color: AppTheme.accentGreen),
+                    labelText: 'Email',
+                    prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.accentGreen),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.lightGreen),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.lightGreen.withValues(alpha: 0.5)),
+                      borderSide: BorderSide(color: AppTheme.lightGreen.withOpacity(0.5)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -122,18 +160,18 @@ class LoginScreen extends StatelessWidget {
                 
                 // Password Field
                 TextField(
+                  controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.accentGreen),
-                    suffixIcon: const Icon(Icons.visibility_off_outlined, color: AppTheme.accentGreen),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.lightGreen),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.lightGreen.withValues(alpha: 0.5)),
+                      borderSide: BorderSide(color: AppTheme.lightGreen.withOpacity(0.5)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -142,50 +180,35 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 
-                const SizedBox(height: 12),
-                
-                // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: AppTheme.accentGreen,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                
                 const SizedBox(height: 24),
                 
                 // Login Button
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/language');
-                  },
+                  onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Login',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                 ),
                 
                 const SizedBox(height: 16),
                 
                 // Guest Login Button
                 OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    await AuthService.loginAsGuest();
+                    if (!mounted) return;
                     Navigator.pushReplacementNamed(context, '/language');
                   },
                   style: OutlinedButton.styleFrom(
@@ -207,26 +230,6 @@ class LoginScreen extends StatelessWidget {
                 ),
                 
                 const SizedBox(height: 30),
-                
-                // Divider
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: AppTheme.lightGreen.withValues(alpha: 0.5))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(
-                          color: AppTheme.accentGreen.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: AppTheme.lightGreen.withValues(alpha: 0.5))),
-                  ],
-                ),
-                
-                const SizedBox(height: 24),
                 
                 // Sign Up
                 Row(

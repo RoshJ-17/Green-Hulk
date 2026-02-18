@@ -91,6 +91,7 @@ export class DiagnosisController {
                 confidence: result.confidence,
                 severity: result.severity,
                 hadQualityWarnings: result.qualityWarnings !== undefined,
+                userId: (dto as any).userId,
             });
 
             await this.scanRepository.save(scanRecord);

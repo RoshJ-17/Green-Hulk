@@ -3,7 +3,9 @@ import {
     PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
+    ManyToOne,
 } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('scan_records')
 export class ScanRecord {
@@ -57,4 +59,10 @@ export class ScanRecord {
 
     @Column({ default: false })
     hadQualityWarnings: boolean;
+
+    @Column({ nullable: true })
+    userId: string;
+
+    @ManyToOne(() => User, (user) => user.scans)
+    user: User;
 }

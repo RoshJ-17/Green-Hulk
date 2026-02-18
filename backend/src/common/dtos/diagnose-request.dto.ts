@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class DiagnoseRequestDto {
@@ -24,5 +24,15 @@ export class DiagnoseRequestDto {
     })
     @IsString()
     @IsNotEmpty()
+    @IsString()
+    @IsNotEmpty()
     selectedCrop: string;
+
+    @ApiProperty({
+        description: 'User ID (optional)',
+        required: false,
+    })
+    @IsString()
+    @IsOptional()
+    userId?: string;
 }
