@@ -12,6 +12,22 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _isLoading = true);
+    await HistoryService.fetchHistory();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final historyItems = HistoryService.history;
@@ -19,9 +35,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Scan History')),
       body: SafeArea(
-        child: historyItems.isEmpty
-            ? _buildEmptyState()
-            : ListView.builder(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : historyItems.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
                 padding: const EdgeInsets.symmetric(
                   vertical: AppTheme.spacingMedium,
                 ),

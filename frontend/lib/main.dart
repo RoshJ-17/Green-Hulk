@@ -5,6 +5,7 @@ import 'screens/signup_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/crop_selection_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/navigation_wrapper.dart';
 import 'screens/treatment_screen.dart';
 import 'models/scan_result.dart';
 import 'theme/app_theme.dart';
@@ -55,6 +56,7 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
         '/signup': (context) => const SignupScreen(),
         '/language': (context) =>
             LanguageSelectionScreen(onLanguageSelected: _changeLanguage),
+        '/main': (context) => const NavigationWrapper(),
         '/crops': (context) => const CropSelectionScreen(),
         '/history': (context) => const HistoryScreen(),
       },
