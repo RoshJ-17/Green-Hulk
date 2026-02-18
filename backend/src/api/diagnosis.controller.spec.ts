@@ -51,6 +51,7 @@ describe('DiagnosisController', () => {
                 {
                     provide: getRepositoryToken(ScanRecord),
                     useValue: {
+                        create: jest.fn().mockReturnValue({}),
                         save: jest.fn().mockResolvedValue({}),
                         find: jest.fn(),
                         findOne: jest.fn(),
@@ -77,11 +78,16 @@ describe('DiagnosisController', () => {
             confidence: 0.92,
             severity: 'high',
             cropType: 'Tomato',
+            fullLabel: 'Tomato___Late_blight',
+            allProbabilities: Array(38).fill(0),
         });
 
         const result = await controller.diagnose(mockFile, dto);
 
         expect(result.type).toBe('success');
+        if (result.type === 'success') {
+            expect(result.cropType).toBe('Tomato');
+        }
         expect(diagnosisService.diagnose).toHaveBeenCalledWith(mockFile.buffer, 'Tomato');
     });
 
@@ -113,6 +119,8 @@ describe('DiagnosisController', () => {
         const result = await controller.diagnose(mockFile, dto);
 
         expect(result.type).toBe('error');
-        expect(result.message).toBe('Poor image quality');
+        if (result.type === 'error') {
+            expect(result.message).toBe('Poor image quality');
+        }
     });
 });
