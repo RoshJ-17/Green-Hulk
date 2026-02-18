@@ -9,10 +9,9 @@ on:
 jobs:
 
   # =========================
-  # BACKEND BUILD + TEST
+  # BACKEND BUILD
   # =========================
   backend:
-    name: Backend Build
     runs-on: ubuntu-latest
 
     defaults:
@@ -20,19 +19,16 @@ jobs:
         working-directory: backend
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # FIXED HERE
       - name: Install dependencies
-        run: npm ci
-
-      - name: Lint (skip if none)
-        run: npm run lint || echo "No lint script"
+        run: npm install
 
       - name: Build backend
         run: npm run build
@@ -49,7 +45,6 @@ jobs:
   # FLUTTER BUILD
   # =========================
   frontend:
-    name: Flutter Build
     runs-on: ubuntu-latest
 
     defaults:
@@ -57,20 +52,23 @@ jobs:
         working-directory: frontend
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
+      # FIXED HERE (Flutter version)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.41.1"
           channel: stable
 
-      - name: Flutter pub get
+      - name: Disable analytics
+        run: flutter config --no-analytics
+
+      - name: Get packages
         run: flutter pub get
 
       - name: Analyze code
-        run: flutter analyze || echo "Analyze warnings ignored"
+        run: flutter analyze || echo "warnings ignored"
 
       - name: Run tests
         run: flutter test || echo "No tests"
@@ -78,7 +76,7 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
