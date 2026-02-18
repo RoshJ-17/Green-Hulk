@@ -19,14 +19,15 @@ jobs:
         working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # FIXED HERE
+      # safer than npm ci if lockfile missing
       - name: Install dependencies
         run: npm install
 
@@ -42,30 +43,40 @@ jobs:
 
 
   # =========================
-  # FLUTTER BUILD
+  # FLUTTER BUILD (FIXED)
   # =========================
   frontend:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: frontend
+        working-directory: frontend   #  CHANGE if your folder name differs
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      # FIXED HERE (Flutter version)
+      #  Install modern Flutter (needed for Dart >=3.9)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.1"
           channel: stable
 
-      - name: Disable analytics
-        run: flutter config --no-analytics
+      #  CRITICAL FIX: delete ANY old dependencies
+      - name: Force clean environment
+        run: |
+          flutter clean
+          rm -rf ~/.pub-cache
+          rm -f pubspec.lock
 
-      - name: Get packages
+      # Fresh dependency resolution from pubspec.yaml
+      - name: Install dependencies fresh
         run: flutter pub get
+
+      # 🔎 Debug step to confirm correct versions
+      - name: Verify plugin versions
+        run: flutter pub deps | grep vibration || true
 
       - name: Analyze code
         run: flutter analyze || echo "warnings ignored"
@@ -73,9 +84,11 @@ jobs:
       - name: Run tests
         run: flutter test || echo "No tests"
 
+      #  Build release APK
       - name: Build APK
         run: flutter build apk --release
 
+      #  Upload artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
