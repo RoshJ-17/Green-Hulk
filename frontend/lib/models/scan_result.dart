@@ -35,4 +35,19 @@ class ScanResult {
     this.qualityWarnings,
   }) : id = id ?? UniqueKey().toString(),
        date = date ?? DateTime.now();
+
+  factory ScanResult.fromJson(Map<String, dynamic> json) {
+    return ScanResult(
+      id: json['id']?.toString(),
+      cropName: json['cropType'] ?? 'Unknown',
+      diseaseName: json['diseaseName'] ?? 'Healthy',
+      confidence: (json['confidence'] ?? 0.0).toDouble(),
+      imagePath: json['imagePath'] ?? '',
+      hasDisease: (json['diseaseName'] ?? '').toLowerCase() != 'healthy' && (json['diseaseName'] ?? '').toLowerCase() != 'null',
+      date: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      severity: json['severity'],
+      fullLabel: json['fullLabel'],
+      qualityWarnings: json['hadQualityWarnings'] == true ? 'Quality issue detected' : null,
+    );
+  }
 }
