@@ -7,27 +7,27 @@ class ConfidenceHelper {
         return `${percentage}%`;
     }
     static isLowConfidence(confidence) {
-        return confidence < 0.50;
+        return confidence < 0.5;
     }
     static getConfidenceLevel(confidence) {
-        if (confidence >= 0.80)
-            return 'high';
-        if (confidence >= 0.50)
-            return 'medium';
-        return 'low';
+        if (confidence >= 0.8)
+            return "high";
+        if (confidence >= 0.5)
+            return "medium";
+        return "low";
     }
-    static getConfidenceMessage(confidence, language = 'en') {
+    static getConfidenceMessage(confidence, language = "en") {
         const level = this.getConfidenceLevel(confidence);
         const messages = {
             en: {
-                high: 'High confidence diagnosis',
-                medium: 'Moderate confidence - consider getting a second opinion',
-                low: 'Low confidence - please retake photo with better lighting and focus',
+                high: "High confidence diagnosis",
+                medium: "Moderate confidence - consider getting a second opinion",
+                low: "Low confidence - please retake photo with better lighting and focus",
             },
             ta: {
-                high: 'உயர் நம்பகத்தன்மை நோய் கண்டறிதல்',
-                medium: 'நடுத்தர நம்பகத்தன்மை - இரண்டாவது கருத்தைப் பெறுங்கள்',
-                low: 'குறைந்த நம்பகத்தன்மை - சிறந்த வெளிச்சத்தில் மீண்டும் புகைப்படம் எடுக்கவும்',
+                high: "உயர் நம்பகத்தன்மை நோய் கண்டறிதல்",
+                medium: "நடுத்தர நம்பகத்தன்மை - இரண்டாவது கருத்தைப் பெறுங்கள்",
+                low: "குறைந்த நம்பகத்தன்மை - சிறந்த வெளிச்சத்தில் மீண்டும் புகைப்படம் எடுக்கவும்",
             },
         };
         return messages[language]?.[level] || messages.en[level];
@@ -35,18 +35,18 @@ class ConfidenceHelper {
     static getConfidenceIcon(confidence) {
         const level = this.getConfidenceLevel(confidence);
         const icons = {
-            high: 'check_circle',
-            medium: 'warning',
-            low: 'error',
+            high: "check_circle",
+            medium: "warning",
+            low: "error",
         };
         return icons[level];
     }
     static getConfidenceColor(confidence) {
         const level = this.getConfidenceLevel(confidence);
         const colors = {
-            high: '#4CAF50',
-            medium: '#FF9800',
-            low: '#F44336',
+            high: "#4CAF50",
+            medium: "#FF9800",
+            low: "#F44336",
         };
         return colors[level];
     }

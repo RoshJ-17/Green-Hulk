@@ -1,5 +1,5 @@
-import { OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 interface LabelLoadResult {
     isSuccess: boolean;
     error?: string;

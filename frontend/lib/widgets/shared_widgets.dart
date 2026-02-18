@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 /// NO INTERNET - LOCAL SCAN BADGE
@@ -136,6 +137,7 @@ class AudioButton extends StatelessWidget {
     );
   }
 }
+
 /// ORGANIC BADGE
 class OrganicBadge extends StatelessWidget {
   final bool isOrganic;
@@ -146,19 +148,19 @@ class OrganicBadge extends StatelessWidget {
       avatar: const Icon(Icons.eco, color: Colors.white),
       label: const Text("Organic Safe"),
       backgroundColor: Colors.green,
-      labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      labelStyle: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }
+
 /// STAR RATING WIDGET
 class StarRating extends StatelessWidget {
   final int rating;
   final Function(int) onChanged;
-  const StarRating({
-    super.key,
-    required this.rating,
-    required this.onChanged,
-  });
+  const StarRating({super.key, required this.rating, required this.onChanged});
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -176,6 +178,7 @@ class StarRating extends StatelessWidget {
     );
   }
 }
+
 /// LOADING OVERLAY
 class LoadingOverlay extends StatelessWidget {
   const LoadingOverlay({super.key});
@@ -189,6 +192,7 @@ class LoadingOverlay extends StatelessWidget {
     );
   }
 }
+
 /// SPEAK BUTTON (Reusable Voice)
 class SpeakButton extends StatefulWidget {
   final String text;
@@ -196,6 +200,7 @@ class SpeakButton extends StatefulWidget {
   @override
   State<SpeakButton> createState() => _SpeakButtonState();
 }
+
 class _SpeakButtonState extends State<SpeakButton> {
   final FlutterTts tts = FlutterTts();
   bool speaking = false;
@@ -208,6 +213,7 @@ class _SpeakButtonState extends State<SpeakButton> {
       setState(() => speaking = true);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
@@ -217,6 +223,7 @@ class _SpeakButtonState extends State<SpeakButton> {
     );
   }
 }
+
 /// HISTORY ITEM CARD
 class HistoryItemCard extends StatelessWidget {
   final String imagePath;
@@ -230,7 +237,7 @@ class HistoryItemCard extends StatelessWidget {
     required this.cropName,
     required this.onTap,
   });
- @override
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -243,25 +250,35 @@ class HistoryItemCard extends StatelessWidget {
               /// IMAGE
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: imagePath.startsWith('assets') 
-                  ? Image.asset(
-                      imagePath,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.image_not_supported, size: 50),
-                    )
-                  : Image.file(
-                      File(imagePath),
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.broken_image, size: 50),
-                    ),
+                child: imagePath.startsWith('assets')
+                    ? Image.asset(
+                        imagePath,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.image_not_supported, size: 50),
+                      )
+                    : kIsWeb
+                    ? Image.network(
+                        imagePath,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
+                      )
+                    : Image.file(
+                        File(imagePath),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
+                      ),
               ),
               const SizedBox(width: 12),
+
               /// TEXT AREA (IMPORTANT FIX)
               Expanded(
                 child: Column(

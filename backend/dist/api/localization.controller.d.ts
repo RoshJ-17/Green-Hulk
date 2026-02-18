@@ -1,4 +1,4 @@
-import { LocalizationService } from '@localization/localization.service';
+import { LocalizationService } from "@localization/localization.service";
 export declare class LocalizationController {
     private readonly localizationService;
     constructor(localizationService: LocalizationService);

@@ -3,20 +3,42 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:vibration/vibration.dart';
 
 /// Voice Search Service
-/// Recognizes keywords: "Tomato", "Blight", "Rice"
+/// Recognizes crop names from the supported crop list
 /// Provides vibration feedback when a keyword is detected
 class VoiceSearchService {
   static final SpeechToText _speech = SpeechToText();
   static bool _isInitialized = false;
   static bool _isListening = false;
 
-  /// Keywords to recognize
-  static const List<String> keywords = ['tomato', 'blight', 'rice'];
+  /// Crop keywords to recognize (must match the crops list in crop_selection_screen.dart)
+  static const List<String> keywords = [
+    'corn', 'maize', // Corn aliases
+    'tomato',
+    'apple',
+    'blueberry',
+    'cherry',
+    'grape',
+    'orange',
+    'peach',
+    'pepper', 'bell pepper', // Pepper aliases
+    'potato',
+    'raspberry',
+    'soybean', 'soy', // Soybean aliases
+    'squash',
+    'strawberry',
+  ];
+
+  /// Map aliases back to canonical crop names (used by crop selection screen)
+  static const Map<String, String> aliasMap = {
+    'maize': 'corn',
+    'bell pepper': 'pepper',
+    'soy': 'soybean',
+  };
 
   /// Initialize speech recognition
   static Future<bool> initialize() async {
     if (_isInitialized) return true;
-    
+
     try {
       _isInitialized = await _speech.initialize(
         onError: (error) => debugPrint('Speech error: $error'),
@@ -31,7 +53,7 @@ class VoiceSearchService {
 
   /// Check if speech recognition is available
   static bool get isAvailable => _isInitialized;
-  
+
   /// Check if currently listening
   static bool get isListening => _isListening;
 
@@ -72,15 +94,15 @@ class VoiceSearchService {
       },
       listenFor: const Duration(seconds: 10),
       pauseFor: const Duration(seconds: 3),
-      partialResults: true,
       localeId: 'en_US',
+      listenOptions: SpeechListenOptions(partialResults: true),
     );
   }
 
   /// Stop listening
   static Future<void> stopListening() async {
     if (!_isListening) return;
-    
+
     await _speech.stop();
     _isListening = false;
   }
@@ -91,11 +113,16 @@ class VoiceSearchService {
     _isListening = false;
   }
 
-  /// Detect if any keyword is in the text
+  /// Detect if any keyword is in the text, returning the canonical crop name
   static String? _detectKeyword(String text) {
-    for (final keyword in keywords) {
+    // Check longer phrases first (e.g., 'bell pepper' before 'pepper')
+    final sortedKeywords = List<String>.from(keywords)
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    for (final keyword in sortedKeywords) {
       if (text.contains(keyword)) {
-        return keyword;
+        // Return canonical name (resolve aliases)
+        return aliasMap[keyword] ?? keyword;
       }
     }
     return null;

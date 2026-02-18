@@ -1,6 +1,6 @@
-import { SupportedClassesService } from './supported-classes.service';
-import { PredictionValidatorService } from './prediction-validator.service';
-import { ValidationResult } from '@common/types/diagnosis-result.types';
+import { SupportedClassesService } from "./supported-classes.service";
+import { PredictionValidatorService } from "./prediction-validator.service";
+import { ValidationResult } from "@common/types/diagnosis-result.types";
 export declare class CropValidatorService {
     private readonly supportedClasses;
     private readonly predictionValidator;

@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/camera_service.dart';
-import '../services/connectivity_service.dart';
+import '../services/history_service.dart';
+import '../services/pending_upload_service.dart';
 import '../services/ai_model_service.dart';
 import '../services/audio_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/camera_service.dart';
 import '../models/scan_result.dart';
 
 class ScanCameraScreen extends StatefulWidget {
   final String cropName;
+
   const ScanCameraScreen({super.key, required this.cropName});
 
   @override
   State<ScanCameraScreen> createState() => _ScanCameraScreenState();
 }
 
-class _ScanCameraScreenState extends State<ScanCameraScreen> {
-
+class _ScanCameraScreenState extends State<ScanCameraScreen>
+    with SingleTickerProviderStateMixin {
   CameraController? controller;
   Future<void>? initializeControllerFuture;
   late FlutterTts tts;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   bool flashOn = false;
   bool heatmapOn = false;
@@ -28,23 +33,34 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
   bool speaking = false;
   bool _isOffline = false;
 
-  // INIT
   @override
   void initState() {
     super.initState();
+    tts = FlutterTts();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _initCamera();
     _initConnectivity();
     _initAIModel();
   }
 
   Future<void> _initConnectivity() async {
-    // Check initial connectivity
     _isOffline = ConnectivityService.isOffline;
-    
-    // Listen for changes
-    ConnectivityService.addListener((isOnline) {
-      if (mounted) {
-        setState(() => _isOffline = !isOnline);
+
+    ConnectivityService.addListener((isOnline) async {
+      if (!mounted) return;
+      setState(() => _isOffline = !isOnline);
+
+      if (isOnline) {
+        await HistoryService.fetchHistory();
       }
     });
   }
@@ -54,345 +70,468 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
   }
 
   Future<void> _initCamera() async {
-    if (backCamera == null) {
-      // Try to init cameras again if null (edge case)
-      await initCameras();
-    }
+    if (backCamera == null) await initCameras();
 
     if (backCamera == null) {
-      debugPrint("No camera found!");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No camera found")),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("No camera found")));
       return;
     }
 
-    final cameraController = CameraController(
+    controller = CameraController(
       backCamera!,
       ResolutionPreset.medium,
       enableAudio: false,
     );
-    controller = cameraController;
+    initializeControllerFuture = controller!.initialize();
 
-    initializeControllerFuture = cameraController.initialize();
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
   }
 
-
-  // DISPOSE
   @override
   void dispose() {
     controller?.dispose();
     tts.stop();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  // VOICE GUIDE
+  // ---------------- CAPTURE ----------------
+  Future<void> captureImage() async {
+    if (controller == null || initializeControllerFuture == null) return;
+
+    setState(() => isProcessing = true);
+
+    try {
+      await AudioService.playCameraShutter();
+      await initializeControllerFuture;
+      final image = await controller!.takePicture();
+
+      if (_isOffline) {
+        // Save to pending queue
+        await PendingUploadService.addPendingUpload(
+          imagePath: image.path,
+          cropName: widget.cropName,
+          heatmap: heatmapOn,
+        );
+
+        final offlineResult = ScanResult(
+          cropName: widget.cropName,
+          diseaseName: "Offline Scan (Queued)",
+          confidence: 0.0,
+          imagePath: image.path,
+          hasDisease: true,
+        );
+
+        if (!mounted) return;
+
+        // Show visual feedback for capture even when offline
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Scan saved! Will process when online."),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        Navigator.pop(context, offlineResult);
+        return;
+      }
+
+      // Visual feedback: border glow/flash effect
+      if (mounted) {
+        setState(() => isProcessing = true);
+      }
+
+      final result = await _analyzeImageWithAI(image.path);
+      HistoryService.addResult(result);
+
+      if (!mounted) return;
+      Navigator.pop(context, result);
+    } catch (e) {
+      if (mounted) setState(() => isProcessing = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<ScanResult> _analyzeImageWithAI(String imagePath) async {
+    try {
+      if (_isOffline) {
+        return ScanResult(
+          cropName: widget.cropName,
+          diseaseName: "Offline Scan (Will Verify Online)",
+          confidence: 0.50,
+          imagePath: imagePath,
+          hasDisease: true,
+        );
+      }
+
+      return await AIModelService.analyzeImage(
+        imagePath: imagePath,
+        cropName: widget.cropName,
+      );
+    } catch (e) {
+      debugPrint("Analysis error: $e");
+      // Fallback result for demo/error handling
+      return ScanResult(
+        cropName: widget.cropName,
+        diseaseName: "Analysis Failed",
+        confidence: 0.0,
+        imagePath: imagePath,
+        hasDisease: false,
+      );
+    }
+  }
+
+  // ---------- VOICE ----------
   Future<void> toggleVoiceGuide() async {
     if (speaking) {
       await tts.stop();
       setState(() => speaking = false);
     } else {
-      await tts.speak(
-        "Place the leaf inside the box and hold the phone steady"
-      );
+      await tts.speak("Align the leaf inside the outline and hold steady");
       setState(() => speaking = true);
     }
   }
 
-  // CAPTURE IMAGE
-  Future<void> captureImage() async {
-    if (controller == null || initializeControllerFuture == null) return;
-
-    try {
-      setState(() => isProcessing = true);
-      await AudioService.playCameraShutter();
-
-      await initializeControllerFuture;
-      final image = await controller!.takePicture();
-
-      // Feed photo into AI model
-      final result = await _analyzeImageWithAI(image.path);
-
-      if (mounted) Navigator.pop(context, result);
-
-    } catch (e) {
-      debugPrint("Capture error: $e");
-      setState(() => isProcessing = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
+  // ---------- FLASH ----------
+  Future<void> toggleFlash() async {
+    if (controller == null) return;
+    setState(() => flashOn = !flashOn);
+    await controller!.setFlashMode(flashOn ? FlashMode.torch : FlashMode.off);
   }
 
-  /// Feed photo into AI model and get result
-  Future<ScanResult> _analyzeImageWithAI(String imagePath) async {
-    try {
-      // Use AI Model Service to analyze the image
-      final result = await AIModelService.analyzeImage(
-        imagePath: imagePath,
-        cropName: widget.cropName,
-      );
-      return result;
-    } catch (e) {
-      debugPrint('AI analysis error: $e');
-      // Fallback to simulated result if AI fails
-      return ScanResult(
-        cropName: widget.cropName,
-        diseaseName: "Leaf Blight",
-        confidence: 0.90,
-        imagePath: imagePath,
-        hasDisease: true,
-      );
-    }
+  // ---------- HEATMAP ----------
+  void toggleHeatmap() {
+    setState(() => heatmapOn = !heatmapOn);
+    AudioService.playButtonClick();
   }
 
-  // PICK FROM GALLERY - Button to pick photo from existing gallery
+  // ---------- GALLERY ----------
   Future<void> pickFromGallery() async {
     await AudioService.playButtonClick();
-    
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (file == null) return;
 
     setState(() => isProcessing = true);
+    final result = await _analyzeImageWithAI(file.path);
+    HistoryService.addResult(result);
 
-    try {
-      // Feed picked photo into AI model
-      final result = await _analyzeImageWithAI(file.path);
-      if (mounted) Navigator.pop(context, result);
-    } catch (e) {
-      debugPrint('Gallery analysis error: $e');
-      setState(() => isProcessing = false);
-    }
+    if (!mounted) return;
+    Navigator.pop(context, result);
   }
 
-  // FLASH TOGGLE (REAL HARDWARE FLASH)
-  Future<void> toggleFlash() async {
-    if (controller == null) return;
-    flashOn = !flashOn;
-    await controller!.setFlashMode(
-      flashOn ? FlashMode.torch : FlashMode.off,
-    );
-    setState(() {});
-  }
-
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final boxSize = size.width * 0.7;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text("Scan ${widget.cropName} Leaf"),
-        backgroundColor: Colors.green,
-      ),
       body: Stack(
         children: [
-
           /// CAMERA PREVIEW
-          if (initializeControllerFuture != null)
-            FutureBuilder(
-              future: initializeControllerFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return CameraPreview(controller!);
-                }
-                return const Center(child: CircularProgressIndicator());
-              },
-            )
-          else
-            const Center(child: Text("Camera not available", style: TextStyle(color: Colors.white))),
-
-          /// OFFLINE BADGE - "No Internet - Local Scan"
-          if (_isOffline)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.wifi_off, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'No Internet - Local Scan',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          /// DARK OVERLAY
-          ColorFiltered(
-            colorFilter: ColorFilter.mode(
-              Colors.black.withValues(alpha: 0.35),
-              BlendMode.darken,
-            ),
-            child: Container(),
+          Positioned.fill(
+            child: initializeControllerFuture != null
+                ? FutureBuilder(
+                    future: initializeControllerFuture,
+                    builder: (_, s) => s.connectionState == ConnectionState.done
+                        ? CameraPreview(controller!)
+                        : const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.green,
+                            ),
+                          ),
+                  )
+                : const Center(
+                    child: CircularProgressIndicator(color: Colors.green),
+                  ),
           ),
 
-          /// FOCUS BOX
+          /// SEMI-TRANSPARENT OVERLAY
+          Positioned.fill(
+            child: Container(color: Colors.black.withValues(alpha: 0.4)),
+          ),
+
+          /// FOCUS BOX (GREEN RECTANGLE)
           Center(
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.greenAccent, width: 3),
-              ),
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Container(
+                  width: boxSize,
+                  height: boxSize * 1.2,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: isProcessing
+                          ? Colors.orange.withValues(
+                              alpha: _pulseAnimation.value,
+                            )
+                          : Colors.green.withValues(
+                              alpha: _pulseAnimation.value,
+                            ),
+                      width: 4,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isProcessing ? Colors.orange : Colors.green)
+                            .withValues(alpha: 0.3 * _pulseAnimation.value),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: isProcessing
+                      ? const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(color: Colors.white),
+                              SizedBox(height: 12),
+                              Text(
+                                "Analyzing...",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : null,
+                );
+              },
             ),
           ),
 
-          /// HEATMAP
-          if (heatmapOn && !isProcessing)
-            const HeatmapOverlay(),
-
-          /// TEXT
-          const Align(
-            alignment: Alignment(0, -0.6),
-            child: Text(
-              "Place the leaf inside the box\nHold phone steady",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          /// HEATMAP SWITCH
-          Positioned(
-            top: 20,
-            right: 20,
-            child: Row(
+          /// TOP BAR
+          SafeArea(
+            child: Column(
               children: [
-                const Text("Heatmap", style: TextStyle(color: Colors.white)),
-                Switch(
-                  value: heatmapOn,
-                  onChanged: isProcessing ? null : (v) => setState(() => heatmapOn = v),
+                if (_isOffline)
+                  Container(
+                    width: double.infinity,
+                    color: Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 14),
+                        SizedBox(width: 8),
+                        Text(
+                          "YOU ARE OFFLINE - SCANS WILL BE CACHED",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      _isOffline
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: const [
+                                  Icon(
+                                    Icons.wifi_off,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    "OFFLINE",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Text(
+                              "Scan ${widget.cropName}",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              heatmapOn
+                                  ? Icons.whatshot
+                                  : Icons.whatshot_outlined,
+                              color: heatmapOn ? Colors.orange : Colors.white,
+                            ),
+                            onPressed: toggleHeatmap,
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              flashOn ? Icons.flash_on : Icons.flash_off,
+                              color: flashOn ? Colors.yellow : Colors.white,
+                            ),
+                            onPressed: toggleFlash,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
 
-          /// FLASH BUTTON
-          Positioned(
-            bottom: 140,
-            right: 30,
-            child: FloatingActionButton(
-              heroTag: "flash",
-              backgroundColor: flashOn ? Colors.orange : Colors.grey,
-              onPressed: isProcessing ? null : toggleFlash,
-              child: const Icon(Icons.flash_on),
-            ),
-          ),
-
-          /// MIC BUTTON
-          Positioned(
-            bottom: 140,
-            left: 30,
-            child: FloatingActionButton(
-              heroTag: "mic",
-              backgroundColor: speaking ? Colors.red : Colors.blue,
-              onPressed: isProcessing ? null : toggleVoiceGuide,
-              child: Icon(speaking ? Icons.stop : Icons.mic),
-            ),
-          ),
-
-          /// CAPTURE BUTTON
+          /// INSTRUCTION TEXT
           Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 40),
-              child: GestureDetector(
-                onTap: isProcessing ? null : captureImage,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(color: Colors.green, width: 5),
-                  ),
+            alignment: const Alignment(0, -0.7),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                "Center the leaf in the box",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ),
 
-          /// GALLERY BUTTON - Pick photo from existing gallery
+          /// BOTTOM CONTROLS
           Positioned(
             bottom: 40,
-            right: 30,
+            left: 0,
+            right: 0,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FloatingActionButton(
-                  heroTag: "gallery",
-                  backgroundColor: Colors.purple,
-                  onPressed: isProcessing ? null : pickFromGallery,
-                  child: const Icon(Icons.photo_library),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Gallery',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCircleButton(
+                      icon: speaking ? Icons.stop : Icons.mic,
+                      color: speaking
+                          ? Colors.red
+                          : Colors.blue.withValues(alpha: 0.8),
+                      onTap: toggleVoiceGuide,
+                    ),
+
+                    /// CAPTURE BUTTON
+                    GestureDetector(
+                      onTap: isProcessing ? null : captureImage,
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                        ),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: isProcessing
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.green,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.green,
+                                  size: 40,
+                                ),
+                        ),
+                      ),
+                    ),
+
+                    _buildCircleButton(
+                      icon: Icons.photo_library,
+                      color: Colors.purple.withValues(alpha: 0.8),
+                      onTap: pickFromGallery,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-
-          /// LOADING SPINNER
-          if (isProcessing)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.green),
-              ),
-            ),
         ],
       ),
     );
   }
-}
 
-/// HEATMAP WIDGET
-class HeatmapOverlay extends StatelessWidget {
-  const HeatmapOverlay({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Center(
-        child: Container(
-          width: 260,
-          height: 260,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: RadialGradient(
-              colors: [
-                Colors.red.withValues(alpha: 0.45),
-                Colors.transparent,
-              ],
-              radius: 0.9,
-              stops: const [0.2, 1],
+  Widget _buildCircleButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: isProcessing ? null : onTap,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          ),
+          ],
         ),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }

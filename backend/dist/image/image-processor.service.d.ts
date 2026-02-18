@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp from "sharp";
 export declare class ImageProcessorService {
     private readonly logger;
     private readonly INPUT_SIZE;

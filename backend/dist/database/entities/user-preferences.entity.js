@@ -35,6 +35,6 @@ __decorate([
     __metadata("design:type", Date)
 ], UserPreferences.prototype, "lastModified", void 0);
 exports.UserPreferences = UserPreferences = __decorate([
-    (0, typeorm_1.Entity)('user_preferences')
+    (0, typeorm_1.Entity)("user_preferences")
 ], UserPreferences);
 //# sourceMappingURL=user-preferences.entity.js.map

@@ -17,6 +17,7 @@ const image_module_1 = require("./image/image.module");
 const validators_module_1 = require("./validators/validators.module");
 const localization_module_1 = require("./localization/localization.module");
 const treatments_module_1 = require("./treatments/treatments.module");
+const auth_module_1 = require("./auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -25,9 +26,10 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '.env',
+                envFilePath: ".env",
             }),
             database_module_1.DatabaseModule,
+            auth_module_1.AuthModule,
             ml_module_1.MlModule,
             image_module_1.ImageModule,
             validators_module_1.ValidatorsModule,

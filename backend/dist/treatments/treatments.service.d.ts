@@ -9,7 +9,7 @@ export interface TreatmentStep {
 }
 export interface Treatment {
     id: string;
-    type: 'chemical' | 'organic';
+    type: "chemical" | "organic";
     is_organic: boolean;
     name: string;
     description?: string;
@@ -55,8 +55,8 @@ export declare class TreatmentsService {
         week?: TreatmentStep[];
         all?: TreatmentStep[];
     }>;
-    getHomeRemedies(diseaseKey: string): Promise<DiseaseData['home_remedies']>;
-    getPreventionTips(diseaseKey: string): Promise<DiseaseData['prevention']>;
+    getHomeRemedies(diseaseKey: string): Promise<DiseaseData["home_remedies"]>;
+    getPreventionTips(diseaseKey: string): Promise<DiseaseData["prevention"]>;
     getAllDiseases(): Promise<Array<{
         key: string;
         name: string;

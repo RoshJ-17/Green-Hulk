@@ -24,7 +24,7 @@ let ScanHistoryService = ScanHistoryService_1 = class ScanHistoryService {
         this.logger = new common_1.Logger(ScanHistoryService_1.name);
     }
     async saveScanRecord(scanData) {
-        this.logger.debug('Saving scan record...');
+        this.logger.debug("Saving scan record...");
         const scanRecord = this.scanRecordRepository.create({
             ...scanData,
             timestamp: new Date(),
@@ -35,25 +35,22 @@ let ScanHistoryService = ScanHistoryService_1 = class ScanHistoryService {
         return saved;
     }
     async getScanHistory(cropType, limit = 50) {
-        const query = this.scanRecordRepository.createQueryBuilder('scan');
+        const query = this.scanRecordRepository.createQueryBuilder("scan");
         if (cropType) {
-            query.where('scan.cropType = :cropType', { cropType });
+            query.where("scan.cropType = :cropType", { cropType });
         }
-        return query
-            .orderBy('scan.timestamp', 'DESC')
-            .limit(limit)
-            .getMany();
+        return query.orderBy("scan.timestamp", "DESC").limit(limit).getMany();
     }
     async getRecentScans(limit = 10) {
         return this.scanRecordRepository.find({
-            order: { timestamp: 'DESC' },
+            order: { timestamp: "DESC" },
             take: limit,
         });
     }
     async getUnsyncedRecords() {
         return this.scanRecordRepository.find({
             where: { isSynced: false },
-            order: { timestamp: 'ASC' },
+            order: { timestamp: "ASC" },
         });
     }
     async markAsSynced(recordId) {
@@ -94,10 +91,10 @@ let ScanHistoryService = ScanHistoryService_1 = class ScanHistoryService {
             }),
         ]);
         const cropCounts = await this.scanRecordRepository
-            .createQueryBuilder('scan')
-            .select('scan.cropType', 'crop')
-            .addSelect('COUNT(*)', 'count')
-            .groupBy('scan.cropType')
+            .createQueryBuilder("scan")
+            .select("scan.cropType", "crop")
+            .addSelect("COUNT(*)", "count")
+            .groupBy("scan.cropType")
             .getRawMany();
         const scansByCrop = {};
         cropCounts.forEach((row) => {
@@ -111,11 +108,11 @@ let ScanHistoryService = ScanHistoryService_1 = class ScanHistoryService {
     }
     async searchByDisease(diseaseName) {
         return this.scanRecordRepository
-            .createQueryBuilder('scan')
-            .where('scan.diseaseName LIKE :disease', {
+            .createQueryBuilder("scan")
+            .where("scan.diseaseName LIKE :disease", {
             disease: `%${diseaseName}%`,
         })
-            .orderBy('scan.timestamp', 'DESC')
+            .orderBy("scan.timestamp", "DESC")
             .getMany();
     }
 };

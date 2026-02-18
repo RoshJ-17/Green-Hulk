@@ -12,19 +12,17 @@ var ModelLoaderService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModelLoaderService = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
 let ModelLoaderService = ModelLoaderService_1 = class ModelLoaderService {
-    constructor(configService) {
-        this.configService = configService;
+    constructor() {
         this.logger = new common_1.Logger(ModelLoaderService_1.name);
         this.isLoaded = false;
-        this.TFLITE_SERVICE_URL = 'http://localhost:5000';
+        this.TFLITE_SERVICE_URL = "http://localhost:5000";
         this.EXPECTED_INPUT_SIZE = 224;
         this.EXPECTED_OUTPUT_CLASSES = 38;
     }
     async onModuleInit() {
-        this.logger.log('Initializing model loader...');
-        this.logger.log('Using Python TFLite microservice for inference');
+        this.logger.log("Initializing model loader...");
+        this.logger.log("Using Python TFLite microservice for inference");
         await this.checkTFLiteService();
     }
     async checkTFLiteService() {
@@ -37,12 +35,12 @@ let ModelLoaderService = ModelLoaderService_1 = class ModelLoaderService {
                 return true;
             }
             else {
-                this.logger.warn('⚠️ TFLite service not responding. Start it with: python tflite_service.py');
+                this.logger.warn("⚠️ TFLite service not responding. Start it with: python tflite_service.py");
                 return false;
             }
         }
         catch (error) {
-            this.logger.warn('⚠️ TFLite service not available. Start it with: python tflite_service.py');
+            this.logger.warn("⚠️ TFLite service not available. Start it with: python tflite_service.py");
             this.logger.warn(`Error: ${error.message}`);
             return false;
         }
@@ -52,17 +50,17 @@ let ModelLoaderService = ModelLoaderService_1 = class ModelLoaderService {
     }
     async runInference(input) {
         if (!this.isLoaded) {
-            throw new Error('TFLite service not available. Please start: python tflite_service.py');
+            throw new Error("TFLite service not available. Please start: python tflite_service.py");
         }
         try {
             const response = await fetch(`${this.TFLITE_SERVICE_URL}/predict`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    input: Array.from(input)
-                })
+                    input: Array.from(input),
+                }),
             });
             if (!response.ok) {
                 const error = await response.json();
@@ -86,6 +84,6 @@ let ModelLoaderService = ModelLoaderService_1 = class ModelLoaderService {
 exports.ModelLoaderService = ModelLoaderService;
 exports.ModelLoaderService = ModelLoaderService = ModelLoaderService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_1.ConfigService])
+    __metadata("design:paramtypes", [])
 ], ModelLoaderService);
 //# sourceMappingURL=model-loader.service.js.map

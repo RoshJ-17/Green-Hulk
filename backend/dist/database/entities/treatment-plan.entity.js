@@ -31,7 +31,7 @@ __decorate([
     __metadata("design:type", String)
 ], TreatmentPlan.prototype, "cropType", void 0);
 __decorate([
-    (0, typeorm_1.Column)('text'),
+    (0, typeorm_1.Column)("text"),
     __metadata("design:type", String)
 ], TreatmentPlan.prototype, "steps", void 0);
 __decorate([
@@ -39,15 +39,15 @@ __decorate([
     __metadata("design:type", Boolean)
 ], TreatmentPlan.prototype, "isOrganic", void 0);
 __decorate([
-    (0, typeorm_1.Column)('int'),
+    (0, typeorm_1.Column)("int"),
     __metadata("design:type", Number)
 ], TreatmentPlan.prototype, "urgencyLevel", void 0);
 __decorate([
-    (0, typeorm_1.Column)('text', { nullable: true }),
+    (0, typeorm_1.Column)("text", { nullable: true }),
     __metadata("design:type", String)
 ], TreatmentPlan.prototype, "preventionTips", void 0);
 __decorate([
-    (0, typeorm_1.Column)('text', { nullable: true }),
+    (0, typeorm_1.Column)("text", { nullable: true }),
     __metadata("design:type", String)
 ], TreatmentPlan.prototype, "safetyWarnings", void 0);
 __decorate([
@@ -55,6 +55,6 @@ __decorate([
     __metadata("design:type", Date)
 ], TreatmentPlan.prototype, "lastUpdated", void 0);
 exports.TreatmentPlan = TreatmentPlan = __decorate([
-    (0, typeorm_1.Entity)('treatment_plans')
+    (0, typeorm_1.Entity)("treatment_plans")
 ], TreatmentPlan);
 //# sourceMappingURL=treatment-plan.entity.js.map

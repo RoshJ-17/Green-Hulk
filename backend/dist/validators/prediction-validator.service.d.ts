@@ -1,5 +1,5 @@
-import { ConfigService } from '@nestjs/config';
-import { PredictionStatus } from '@common/types/diagnosis-result.types';
+import { ConfigService } from "@nestjs/config";
+import { PredictionStatus } from "@common/types/diagnosis-result.types";
 export declare class PredictionValidatorService {
     private readonly configService;
     private readonly CONFIDENCE_THRESHOLD;

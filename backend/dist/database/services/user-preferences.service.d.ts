@@ -1,5 +1,5 @@
-import { Repository } from 'typeorm';
-import { UserPreferences } from '@database/entities/user-preferences.entity';
+import { Repository } from "typeorm";
+import { UserPreferences } from "@database/entities/user-preferences.entity";
 export declare class UserPreferencesService {
     private readonly preferencesRepository;
     private readonly logger;

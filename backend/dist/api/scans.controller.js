@@ -43,61 +43,61 @@ let ScansController = class ScansController {
 };
 exports.ScansController = ScansController;
 __decorate([
-    (0, common_1.Get)('history'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get scan history' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Returns scan history' }),
-    __param(0, (0, common_1.Query)('cropType')),
-    __param(1, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    (0, common_1.Get)("history"),
+    (0, swagger_1.ApiOperation)({ summary: "Get scan history" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Returns scan history" }),
+    __param(0, (0, common_1.Query)("cropType")),
+    __param(1, (0, common_1.Query)("limit", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Number]),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "getScanHistory", null);
 __decorate([
-    (0, common_1.Get)('recent'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get recent scans' }),
-    __param(0, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    (0, common_1.Get)("recent"),
+    (0, swagger_1.ApiOperation)({ summary: "Get recent scans" }),
+    __param(0, (0, common_1.Query)("limit", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "getRecentScans", null);
 __decorate([
-    (0, common_1.Post)('sync'),
-    (0, swagger_1.ApiOperation)({ summary: 'Sync scan record from mobile' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: 'Scan synced successfully' }),
+    (0, common_1.Post)("sync"),
+    (0, swagger_1.ApiOperation)({ summary: "Sync scan record from mobile" }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: "Scan synced successfully" }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "syncScan", null);
 __decorate([
-    (0, common_1.Get)('storage-info'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get storage information' }),
+    (0, common_1.Get)("storage-info"),
+    (0, swagger_1.ApiOperation)({ summary: "Get storage information" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns storage size and file count',
+        description: "Returns storage size and file count",
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "getStorageInfo", null);
 __decorate([
-    (0, common_1.Get)('stats'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get scan statistics' }),
+    (0, common_1.Get)("stats"),
+    (0, swagger_1.ApiOperation)({ summary: "Get scan statistics" }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "getScanStats", null);
 __decorate([
-    (0, common_1.Get)('search'),
-    (0, swagger_1.ApiOperation)({ summary: 'Search scans by disease name' }),
-    __param(0, (0, common_1.Query)('disease')),
+    (0, common_1.Get)("search"),
+    (0, swagger_1.ApiOperation)({ summary: "Search scans by disease name" }),
+    __param(0, (0, common_1.Query)("disease")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ScansController.prototype, "searchByDisease", null);
 exports.ScansController = ScansController = __decorate([
-    (0, swagger_1.ApiTags)('Scans'),
-    (0, common_1.Controller)('api/scans'),
+    (0, swagger_1.ApiTags)("Scans"),
+    (0, common_1.Controller)("api/scans"),
     __metadata("design:paramtypes", [scan_history_service_1.ScanHistoryService,
         storage_utility_service_1.StorageUtilityService])
 ], ScansController);

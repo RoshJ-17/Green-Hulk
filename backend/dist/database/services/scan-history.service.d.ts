@@ -1,5 +1,5 @@
-import { Repository } from 'typeorm';
-import { ScanRecord } from '@database/entities/scan-record.entity';
+import { Repository } from "typeorm";
+import { ScanRecord } from "@database/entities/scan-record.entity";
 export declare class ScanHistoryService {
     private readonly scanRecordRepository;
     private readonly logger;

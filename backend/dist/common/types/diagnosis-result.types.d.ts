@@ -38,7 +38,7 @@ export interface TopKAnalysis {
 }
 export type DiagnosisResult = SuccessResult | PoorQualityResult | OutOfDistributionResult | WrongCropResult | LowConfidenceResult | ErrorResult;
 export interface SuccessResult {
-    type: 'success';
+    type: "success";
     disease: string;
     confidence: number;
     severity: string;
@@ -48,48 +48,48 @@ export interface SuccessResult {
     qualityWarnings?: QualityIssue[];
 }
 export interface PoorQualityResult {
-    type: 'poorQuality';
+    type: "poorQuality";
     message: string;
     issues: QualityIssue[];
 }
 export interface OutOfDistributionResult {
-    type: 'outOfDistribution';
+    type: "outOfDistribution";
     message: string;
     reason: OODReason;
     maxProbability?: number;
     entropy?: number;
 }
 export interface WrongCropResult {
-    type: 'wrongCrop';
+    type: "wrongCrop";
     selectedCrop: string;
     detectedCrop: string;
     message: string;
 }
 export interface LowConfidenceResult {
-    type: 'lowConfidence';
+    type: "lowConfidence";
     message: string;
     confidence: number;
 }
 export interface ErrorResult {
-    type: 'error';
+    type: "error";
     message: string;
     stackTrace?: string;
 }
 export type ValidationResult = ValidResult | WrongCropValidation | LowQualityValidation;
 export interface ValidResult {
-    type: 'valid';
+    type: "valid";
     disease: string;
     confidence: number;
     severity: string;
 }
 export interface WrongCropValidation {
-    type: 'wrongCrop';
+    type: "wrongCrop";
     selectedCrop: string;
     detectedCrop: string;
     message: string;
 }
 export interface LowQualityValidation {
-    type: 'lowQuality';
+    type: "lowQuality";
     message: string;
 }
 export interface OODResult {

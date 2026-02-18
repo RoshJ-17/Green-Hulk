@@ -17,13 +17,12 @@ const diagnosis_result_types_1 = require("../common/types/diagnosis-result.types
 let OodDetectorService = class OodDetectorService {
     constructor(supportedClasses, configService) {
         this.supportedClasses = supportedClasses;
-        this.configService = configService;
         this.MAX_PROB_THRESHOLD =
-            this.configService.get('MAX_PROB_THRESHOLD') || 0.4;
+            configService.get("MAX_PROB_THRESHOLD") || 0.4;
         this.ENTROPY_THRESHOLD =
-            this.configService.get('ENTROPY_THRESHOLD') || 2.5;
+            configService.get("ENTROPY_THRESHOLD") || 2.5;
         this.TOP_K_MARGIN_THRESHOLD =
-            this.configService.get('TOP_K_MARGIN_THRESHOLD') || 0.15;
+            configService.get("TOP_K_MARGIN_THRESHOLD") || 0.15;
     }
     analyze(probabilities, labels) {
         const maxProb = Math.max(...probabilities);
@@ -96,7 +95,7 @@ let OodDetectorService = class OodDetectorService {
         const topK = indexed.slice(0, k);
         const predictions = topK.map((item) => {
             const label = labels[item.idx];
-            const [crop, disease] = label.split('___');
+            const [crop, disease] = label.split("___");
             return {
                 crop,
                 disease,
@@ -116,7 +115,7 @@ let OodDetectorService = class OodDetectorService {
     formatTopK(analysis) {
         return analysis.predictions
             .map((p) => `  ${Math.round(p.probability * 100)}% - ${p.crop} ${p.disease}`)
-            .join('\n');
+            .join("\n");
     }
 };
 exports.OodDetectorService = OodDetectorService;

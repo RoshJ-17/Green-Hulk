@@ -37,34 +37,40 @@ let DiagnosisService = DiagnosisService_1 = class DiagnosisService {
     async diagnose(imageBuffer, selectedCrop) {
         const startTime = Date.now();
         try {
+            if (!this.modelLoader.isModelLoaded()) {
+                return {
+                    type: "error",
+                    message: "AI model is not loaded or initialized",
+                };
+            }
             const image = (0, sharp_1.default)(imageBuffer);
             const metadata = await image.metadata();
             if (!metadata.width || !metadata.height) {
                 return {
-                    type: 'error',
-                    message: 'Invalid image: missing dimensions',
+                    type: "error",
+                    message: "Invalid image: missing dimensions",
                 };
             }
             this.logger.debug(`Image loaded: ${metadata.width}x${metadata.height}, format: ${metadata.format}`);
             const qualityResult = await this.qualityChecker.checkImageQuality(imageBuffer, { width: metadata.width, height: metadata.height });
             if (qualityResult.hasCriticalIssues) {
-                this.logger.warn('Image rejected due to critical quality issues');
+                this.logger.warn("Image rejected due to critical quality issues");
                 return {
-                    type: 'poorQuality',
+                    type: "poorQuality",
                     message: this.qualityChecker.getUserFriendlyMessage(qualityResult),
                     issues: qualityResult.issues,
                 };
             }
-            this.logger.debug('Preprocessing image...');
+            this.logger.debug("Preprocessing image...");
             const preprocessed = await this.imageProcessor.preprocess(imageBuffer);
-            this.logger.debug('Running inference...');
+            this.logger.debug("Running inference...");
             const probabilities = await this.modelLoader.runInference(preprocessed);
             const labels = this.labelLoader.getAllLabels();
             const oodResult = this.oodDetector.analyze(probabilities, labels);
             if (!oodResult.isInDistribution) {
                 this.logger.warn(`OOD detected: ${oodResult.reason}`);
                 return {
-                    type: 'outOfDistribution',
+                    type: "outOfDistribution",
                     message: oodResult.message,
                     reason: oodResult.reason,
                     maxProbability: oodResult.maxProbability,
@@ -73,21 +79,26 @@ let DiagnosisService = DiagnosisService_1 = class DiagnosisService {
             }
             const maxIndex = this.getMaxIndex(probabilities);
             const confidence = probabilities[maxIndex];
+            const top3 = probabilities
+                .map((prob, index) => ({ prob, label: labels[index] }))
+                .sort((a, b) => b.prob - a.prob)
+                .slice(0, 3);
+            this.logger.debug(`Top 3 predictions: ${top3.map((p) => `${p.label} (${(p.prob * 100).toFixed(1)}%)`).join(", ")}`);
             this.logger.debug(`Top prediction: index ${maxIndex}, confidence ${(confidence * 100).toFixed(2)}%`);
             const validation = this.cropValidator.validatePrediction(selectedCrop, maxIndex, labels, confidence);
-            if (validation.type === 'wrongCrop') {
+            if (validation.type === "wrongCrop") {
                 this.logger.warn(`Crop mismatch: selected ${validation.selectedCrop}, detected ${validation.detectedCrop}`);
                 return {
-                    type: 'wrongCrop',
+                    type: "wrongCrop",
                     selectedCrop: validation.selectedCrop,
                     detectedCrop: validation.detectedCrop,
                     message: validation.message,
                 };
             }
-            if (validation.type === 'lowQuality') {
-                this.logger.warn('Low confidence prediction rejected');
+            if (validation.type === "lowQuality") {
+                this.logger.warn("Low confidence prediction rejected");
                 return {
-                    type: 'lowConfidence',
+                    type: "lowConfidence",
                     message: validation.message,
                     confidence,
                 };
@@ -97,20 +108,22 @@ let DiagnosisService = DiagnosisService_1 = class DiagnosisService {
             const elapsedTime = Date.now() - startTime;
             this.logger.log(`Diagnosis completed in ${elapsedTime}ms: ${validResult.disease} (${(confidence * 100).toFixed(2)}%)`);
             return {
-                type: 'success',
+                type: "success",
                 disease: validResult.disease,
                 confidence,
                 severity: validResult.severity,
                 cropType: selectedCrop,
                 fullLabel,
                 allProbabilities: probabilities,
-                qualityWarnings: qualityResult.isGood ? undefined : qualityResult.issues,
+                qualityWarnings: qualityResult.isGood
+                    ? undefined
+                    : qualityResult.issues,
             };
         }
         catch (error) {
             this.logger.error(`Diagnosis failed: ${error.message}`, error.stack);
             return {
-                type: 'error',
+                type: "error",
                 message: `Diagnosis failed: ${error.message}`,
                 stackTrace: error.stack,
             };

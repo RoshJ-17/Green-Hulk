@@ -1,60 +1,60 @@
 import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    CreateDateColumn,
-} from 'typeorm';
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from "typeorm";
 
-@Entity('scan_records')
+@Entity("scan_records")
 export class ScanRecord {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @CreateDateColumn()
-    timestamp: Date;
+  @CreateDateColumn()
+  timestamp: Date;
 
-    @Column()
-    cropType: string;
+  @Column()
+  cropType: string;
 
-    @Column()
-    imagePath: string;
+  @Column()
+  imagePath: string;
 
-    @Column()
-    diseaseName: string;
+  @Column()
+  diseaseName: string;
 
-    @Column()
-    fullLabel: string;
+  @Column()
+  fullLabel: string;
 
-    @Column('float')
-    confidence: number;
+  @Column("float")
+  confidence: number;
 
-    @Column()
-    severity: string;
+  @Column()
+  severity: string;
 
-    @Column('float', { nullable: true })
-    affectedAreaPercentage?: number;
+  @Column("float", { nullable: true })
+  affectedAreaPercentage?: number;
 
-    @Column({ nullable: true })
-    heatmapPath?: string;
+  @Column({ nullable: true })
+  heatmapPath?: string;
 
-    @Column('float', { nullable: true })
-    latitude?: number;
+  @Column("float", { nullable: true })
+  latitude?: number;
 
-    @Column('float', { nullable: true })
-    longitude?: number;
+  @Column("float", { nullable: true })
+  longitude?: number;
 
-    @Column({ default: false })
-    isSynced: boolean;
+  @Column({ default: false })
+  isSynced: boolean;
 
-    @Column({ type: 'datetime', nullable: true })
-    lastSyncAttempt?: Date;
+  @Column({ type: "datetime", nullable: true })
+  lastSyncAttempt?: Date;
 
-    @Column('float', { nullable: true })
-    imageBlurScore?: number;
+  @Column("float", { nullable: true })
+  imageBlurScore?: number;
 
-    @Column('float', { nullable: true })
-    imageBrightness?: number;
+  @Column("float", { nullable: true })
+  imageBrightness?: number;
 
-    @Column({ default: false })
-    hadQualityWarnings: boolean;
+  @Column({ default: false })
+  hadQualityWarnings: boolean;
 }

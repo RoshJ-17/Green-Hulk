@@ -16,6 +16,7 @@ const user_preferences_entity_1 = require("./entities/user-preferences.entity");
 const user_preferences_service_1 = require("./services/user-preferences.service");
 const scan_history_service_1 = require("./services/scan-history.service");
 const storage_utility_service_1 = require("./services/storage-utility.service");
+const user_entity_1 = require("./entities/user.entity");
 let DatabaseModule = class DatabaseModule {
 };
 exports.DatabaseModule = DatabaseModule;
@@ -25,15 +26,20 @@ exports.DatabaseModule = DatabaseModule = __decorate([
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: (configService) => ({
-                    type: 'sqlite',
-                    database: configService.get('DB_PATH') || './data/plant-disease.db',
-                    entities: [scan_record_entity_1.ScanRecord, treatment_plan_entity_1.TreatmentPlan, user_preferences_entity_1.UserPreferences],
+                    type: "sqlite",
+                    database: configService.get("DB_PATH") || "./data/plant-disease.db",
+                    entities: [scan_record_entity_1.ScanRecord, treatment_plan_entity_1.TreatmentPlan, user_preferences_entity_1.UserPreferences, user_entity_1.User],
                     synchronize: true,
-                    logging: configService.get('NODE_ENV') === 'development',
+                    logging: configService.get("NODE_ENV") === "development",
                 }),
                 inject: [config_1.ConfigService],
             }),
-            typeorm_1.TypeOrmModule.forFeature([scan_record_entity_1.ScanRecord, treatment_plan_entity_1.TreatmentPlan, user_preferences_entity_1.UserPreferences]),
+            typeorm_1.TypeOrmModule.forFeature([
+                scan_record_entity_1.ScanRecord,
+                treatment_plan_entity_1.TreatmentPlan,
+                user_preferences_entity_1.UserPreferences,
+                user_entity_1.User,
+            ]),
         ],
         providers: [
             user_preferences_service_1.UserPreferencesService,

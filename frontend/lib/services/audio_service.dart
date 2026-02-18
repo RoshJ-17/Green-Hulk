@@ -5,46 +5,42 @@ import 'package:audioplayers/audioplayers.dart';
 /// Plays audio feedback for button clicks and interactions
 class AudioService {
   static final AudioPlayer _player = AudioPlayer();
-  static bool _isEnabled = true;
-
-  /// Enable/disable audio feedback
-  static bool get isEnabled => _isEnabled;
-  static set isEnabled(bool value) => _isEnabled = value;
+  static bool isEnabled = true;
 
   /// Play button click sound
   static Future<void> playButtonClick() async {
-    if (!_isEnabled) return;
+    if (!isEnabled) return;
     await _playSystemSound();
   }
 
   /// Play success sound
   static Future<void> playSuccess() async {
-    if (!_isEnabled) return;
+    if (!isEnabled) return;
     await _playSystemSound();
   }
 
   /// Play error sound
   static Future<void> playError() async {
-    if (!_isEnabled) return;
+    if (!isEnabled) return;
     await _playSystemSound();
   }
 
   /// Play camera shutter sound
   static Future<void> playCameraShutter() async {
-    if (!_isEnabled) return;
+    if (!isEnabled) return;
     await _playSystemSound();
   }
 
   /// Play keyword detected sound
   static Future<void> playKeywordDetected() async {
-    if (!_isEnabled) return;
+    if (!isEnabled) return;
     await _playSystemSound();
   }
 
   /// Play from asset file
   static Future<void> playFromAsset(String assetPath) async {
-    if (!_isEnabled) return;
-    
+    if (!isEnabled) return;
+
     try {
       await _player.play(AssetSource(assetPath));
     } catch (e) {
@@ -54,8 +50,8 @@ class AudioService {
 
   /// Play from file path
   static Future<void> playFromFile(String filePath) async {
-    if (!_isEnabled) return;
-    
+    if (!isEnabled) return;
+
     try {
       await _player.play(DeviceFileSource(filePath));
     } catch (e) {
@@ -65,8 +61,8 @@ class AudioService {
 
   /// Play from URL
   static Future<void> playFromUrl(String url) async {
-    if (!_isEnabled) return;
-    
+    if (!isEnabled) return;
+
     try {
       await _player.play(UrlSource(url));
     } catch (e) {
@@ -81,7 +77,7 @@ class AudioService {
       // For now, we'll use a simple beep
       // In production, you'd add actual audio files in assets/sounds/
       // await _player.play(AssetSource('sounds/click.mp3'));
-      
+
       // As a fallback, we can generate a simple tone
       debugPrint('Audio: Playing system sound');
     } catch (e) {

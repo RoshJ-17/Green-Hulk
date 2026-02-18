@@ -1,10 +1,10 @@
-import { DiagnosisService } from '@diagnosis/diagnosis.service';
-import { SupportedClassesService } from '@validators/supported-classes.service';
-import { LabelLoaderService } from '@ml/label-loader.service';
-import { DiagnoseRequestDto } from '@common/dtos/diagnose-request.dto';
-import { DiagnosisResponseDto } from '@common/dtos/diagnosis-response.dto';
-import { Repository } from 'typeorm';
-import { ScanRecord } from '@database/entities/scan-record.entity';
+import { DiagnosisService } from "@diagnosis/diagnosis.service";
+import { SupportedClassesService } from "@validators/supported-classes.service";
+import { LabelLoaderService } from "@ml/label-loader.service";
+import { DiagnoseRequestDto } from "@common/dtos/diagnose-request.dto";
+import { DiagnosisResponseDto } from "@common/dtos/diagnosis-response.dto";
+import { Repository } from "typeorm";
+import { ScanRecord } from "@database/entities/scan-record.entity";
 export declare class DiagnosisController {
     private readonly diagnosisService;
     private readonly supportedClasses;

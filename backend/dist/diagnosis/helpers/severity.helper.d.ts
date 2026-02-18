@@ -18,7 +18,7 @@ export declare class SeverityHelper {
     static getSeverityHexColor(severity: string): string;
     static getActionTimeframe(severity: string): string;
     static shouldSendNotification(severity: string): boolean;
-    static getNotificationPriority(severity: string): 'low' | 'medium' | 'high';
+    static getNotificationPriority(severity: string): "low" | "medium" | "high";
     static formatSeverityDisplay(severity: string, language?: string): {
         color: SeverityColor;
         hexColor: string;

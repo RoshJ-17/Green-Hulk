@@ -1,4 +1,4 @@
-import { TreatmentsService } from '@treatments/treatments.service';
+import { TreatmentsService } from "@treatments/treatments.service";
 export declare class TreatmentsController {
     private readonly treatmentsService;
     constructor(treatmentsService: TreatmentsService);

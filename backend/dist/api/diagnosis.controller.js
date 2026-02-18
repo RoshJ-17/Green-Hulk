@@ -35,22 +35,22 @@ let DiagnosisController = DiagnosisController_1 = class DiagnosisController {
     }
     async diagnose(file, dto) {
         if (!file) {
-            throw new common_1.BadRequestException('Image file is required');
+            throw new common_1.BadRequestException("Image file is required");
         }
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            throw new common_1.BadRequestException('Image file too large (max 10MB)');
+            throw new common_1.BadRequestException("Image file too large (max 10MB)");
         }
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
         if (!allowedTypes.includes(file.mimetype)) {
-            throw new common_1.BadRequestException('Invalid file type. Allowed: JPEG, PNG');
+            throw new common_1.BadRequestException("Invalid file type. Allowed: JPEG, PNG");
         }
         if (!this.supportedClasses.isCropSupported(dto.selectedCrop)) {
-            throw new common_1.BadRequestException(`Unsupported crop: ${dto.selectedCrop}. Supported crops: ${this.supportedClasses.getSupportedCrops().join(', ')}`);
+            throw new common_1.BadRequestException(`Unsupported crop: ${dto.selectedCrop}. Supported crops: ${this.supportedClasses.getSupportedCrops().join(", ")}`);
         }
         this.logger.log(`Diagnosing ${file.originalname} for crop: ${dto.selectedCrop}`);
         const result = await this.diagnosisService.diagnose(file.buffer, dto.selectedCrop);
-        if (result.type === 'success') {
+        if (result.type === "success") {
             const scanRecord = this.scanRepository.create({
                 cropType: result.cropType,
                 imagePath: file.originalname,
@@ -86,15 +86,15 @@ let DiagnosisController = DiagnosisController_1 = class DiagnosisController {
 };
 exports.DiagnosisController = DiagnosisController;
 __decorate([
-    (0, common_1.Post)('diagnose'),
-    (0, swagger_1.ApiOperation)({ summary: 'Diagnose plant disease from image' }),
-    (0, swagger_1.ApiConsumes)('multipart/form-data'),
+    (0, common_1.Post)("diagnose"),
+    (0, swagger_1.ApiOperation)({ summary: "Diagnose plant disease from image" }),
+    (0, swagger_1.ApiConsumes)("multipart/form-data"),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Diagnosis completed',
+        description: "Diagnosis completed",
         type: diagnosis_response_dto_1.DiagnosisResponseDto,
     }),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)("image")),
     __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -102,31 +102,31 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DiagnosisController.prototype, "diagnose", null);
 __decorate([
-    (0, common_1.Get)('crops'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get list of supported crops' }),
+    (0, common_1.Get)("crops"),
+    (0, swagger_1.ApiOperation)({ summary: "Get list of supported crops" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'List of supported crops with disease counts',
+        description: "List of supported crops with disease counts",
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], DiagnosisController.prototype, "getSupportedCrops", null);
 __decorate([
-    (0, common_1.Get)('diseases/:crop'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get diseases for a specific crop' }),
+    (0, common_1.Get)("diseases/:crop"),
+    (0, swagger_1.ApiOperation)({ summary: "Get diseases for a specific crop" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'List of diseases for the crop',
+        description: "List of diseases for the crop",
     }),
-    __param(0, (0, common_1.Param)('crop')),
+    __param(0, (0, common_1.Param)("crop")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DiagnosisController.prototype, "getDiseasesForCrop", null);
 exports.DiagnosisController = DiagnosisController = DiagnosisController_1 = __decorate([
-    (0, swagger_1.ApiTags)('diagnosis'),
-    (0, common_1.Controller)('api'),
+    (0, swagger_1.ApiTags)("diagnosis"),
+    (0, common_1.Controller)("api"),
     __param(3, (0, typeorm_1.InjectRepository)(scan_record_entity_1.ScanRecord)),
     __metadata("design:paramtypes", [diagnosis_service_1.DiagnosisService,
         supported_classes_service_1.SupportedClassesService,

@@ -1,24 +1,24 @@
 import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    UpdateDateColumn,
-} from 'typeorm';
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  UpdateDateColumn,
+} from "typeorm";
 
-@Entity('user_preferences')
+@Entity("user_preferences")
 export class UserPreferences {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ nullable: true })
-    preferredLanguage?: string;
+  @Column({ nullable: true })
+  preferredLanguage?: string;
 
-    @Column({ nullable: true })
-    defaultCrop?: string;
+  @Column({ nullable: true })
+  defaultCrop?: string;
 
-    @Column({ default: true })
-    preferOrganicTreatments: boolean;
+  @Column({ default: true })
+  preferOrganicTreatments: boolean;
 
-    @UpdateDateColumn()
-    lastModified: Date;
+  @UpdateDateColumn()
+  lastModified: Date;
 }

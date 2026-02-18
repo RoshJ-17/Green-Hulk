@@ -51,7 +51,7 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
     constructor() {
         this.logger = new common_1.Logger(LocalizationService_1.name);
         this.translationsCache = new Map();
-        this.translationsPath = path.join(__dirname, 'translations');
+        this.translationsPath = path.join(__dirname, "translations");
     }
     async getTranslations(language) {
         this.logger.debug(`Loading translations for language: ${language}`);
@@ -61,7 +61,7 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
         }
         const filePath = path.join(this.translationsPath, `${language}.json`);
         try {
-            const fileContent = await fs.readFile(filePath, 'utf-8');
+            const fileContent = await fs.readFile(filePath, "utf-8");
             const translations = JSON.parse(fileContent);
             this.translationsCache.set(language, translations);
             this.logger.log(`Loaded translations for ${language}`);
@@ -69,9 +69,9 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
         }
         catch (error) {
             this.logger.warn(`Failed to load translations for ${language}: ${error.message}`);
-            if (language !== 'en') {
-                this.logger.debug('Falling back to English translations');
-                return this.getTranslations('en');
+            if (language !== "en") {
+                this.logger.debug("Falling back to English translations");
+                return this.getTranslations("en");
             }
             throw new common_1.NotFoundException(`Translations for language "${language}" not found`);
         }
@@ -79,47 +79,47 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
     detectLanguage(acceptLanguageHeader) {
         this.logger.debug(`Detecting language from header: ${acceptLanguageHeader}`);
         if (!acceptLanguageHeader) {
-            return 'en';
+            return "en";
         }
         const languages = acceptLanguageHeader
-            .split(',')
+            .split(",")
             .map((lang) => {
-            const parts = lang.trim().split(';');
-            const code = parts[0].split('-')[0];
-            const quality = parts[1] ? parseFloat(parts[1].split('=')[1]) : 1.0;
+            const parts = lang.trim().split(";");
+            const code = parts[0].split("-")[0];
+            const quality = parts[1] ? parseFloat(parts[1].split("=")[1]) : 1.0;
             return { code, quality };
         })
             .sort((a, b) => b.quality - a.quality);
-        const supportedLanguages = ['en', 'ta'];
+        const supportedLanguages = ["en", "ta"];
         for (const lang of languages) {
             if (supportedLanguages.includes(lang.code)) {
                 this.logger.debug(`Detected language: ${lang.code}`);
                 return lang.code;
             }
         }
-        this.logger.debug('No supported language found, defaulting to English');
-        return 'en';
+        this.logger.debug("No supported language found, defaulting to English");
+        return "en";
     }
     async getSupportedLanguages() {
         try {
             const files = await fs.readdir(this.translationsPath);
             const languages = files
-                .filter((file) => file.endsWith('.json'))
-                .map((file) => file.replace('.json', ''));
-            this.logger.debug(`Supported languages: ${languages.join(', ')}`);
+                .filter((file) => file.endsWith(".json"))
+                .map((file) => file.replace(".json", ""));
+            this.logger.debug(`Supported languages: ${languages.join(", ")}`);
             return languages;
         }
         catch (error) {
             this.logger.error(`Error reading translations directory: ${error.message}`);
-            return ['en'];
+            return ["en"];
         }
     }
     async getTranslation(language, key) {
         const translations = await this.getTranslations(language);
-        const keys = key.split('.');
+        const keys = key.split(".");
         let value = translations;
         for (const k of keys) {
-            if (value && typeof value === 'object' && k in value) {
+            if (value && typeof value === "object" && k in value) {
                 value = value[k];
             }
             else {
@@ -131,7 +131,7 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
     }
     clearCache() {
         this.translationsCache.clear();
-        this.logger.log('Translations cache cleared');
+        this.logger.log("Translations cache cleared");
     }
     async reloadLanguage(language) {
         this.translationsCache.delete(language);
@@ -141,14 +141,14 @@ let LocalizationService = LocalizationService_1 = class LocalizationService {
     async getLanguageInfo(language) {
         const languageInfo = {
             en: {
-                code: 'en',
-                name: 'English',
-                nativeName: 'English',
+                code: "en",
+                name: "English",
+                nativeName: "English",
             },
             ta: {
-                code: 'ta',
-                name: 'Tamil',
-                nativeName: 'தமிழ்',
+                code: "ta",
+                name: "Tamil",
+                nativeName: "தமிழ்",
             },
         };
         return languageInfo[language] || languageInfo.en;

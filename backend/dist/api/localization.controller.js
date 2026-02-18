@@ -45,52 +45,52 @@ let LocalizationController = class LocalizationController {
 };
 exports.LocalizationController = LocalizationController;
 __decorate([
-    (0, common_1.Get)(':language'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get translations for a language' }),
+    (0, common_1.Get)(":language"),
+    (0, swagger_1.ApiOperation)({ summary: "Get translations for a language" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns translation JSON for the specified language',
+        description: "Returns translation JSON for the specified language",
     }),
-    __param(0, (0, common_1.Param)('language')),
+    __param(0, (0, common_1.Param)("language")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LocalizationController.prototype, "getTranslations", null);
 __decorate([
-    (0, common_1.Get)('detect/auto'),
-    (0, swagger_1.ApiOperation)({ summary: 'Detect preferred language from headers' }),
+    (0, common_1.Get)("detect/auto"),
+    (0, swagger_1.ApiOperation)({ summary: "Detect preferred language from headers" }),
     (0, swagger_1.ApiHeader)({
-        name: 'Accept-Language',
-        description: 'Browser Accept-Language header',
+        name: "Accept-Language",
+        description: "Browser Accept-Language header",
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns detected language code',
+        description: "Returns detected language code",
     }),
-    __param(0, (0, common_1.Headers)('accept-language')),
+    __param(0, (0, common_1.Headers)("accept-language")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LocalizationController.prototype, "detectLanguage", null);
 __decorate([
-    (0, common_1.Get)('languages/supported'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get list of supported languages' }),
+    (0, common_1.Get)("languages/supported"),
+    (0, swagger_1.ApiOperation)({ summary: "Get list of supported languages" }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], LocalizationController.prototype, "getSupportedLanguages", null);
 __decorate([
-    (0, common_1.Get)(':language/key/:key'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get specific translation key' }),
-    __param(0, (0, common_1.Param)('language')),
-    __param(1, (0, common_1.Param)('key')),
+    (0, common_1.Get)(":language/key/:key"),
+    (0, swagger_1.ApiOperation)({ summary: "Get specific translation key" }),
+    __param(0, (0, common_1.Param)("language")),
+    __param(1, (0, common_1.Param)("key")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], LocalizationController.prototype, "getTranslationKey", null);
 exports.LocalizationController = LocalizationController = __decorate([
-    (0, swagger_1.ApiTags)('Localization'),
-    (0, common_1.Controller)('api/i18n'),
+    (0, swagger_1.ApiTags)("Localization"),
+    (0, common_1.Controller)("api/i18n"),
     __metadata("design:paramtypes", [localization_service_1.LocalizationService])
 ], LocalizationController);
 //# sourceMappingURL=localization.controller.js.map

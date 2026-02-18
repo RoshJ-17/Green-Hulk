@@ -2,24 +2,1917 @@
     "Apple___Apple_scab": {
         "disease_name": "Apple Scab",
         "crop": "Apple",
+        "description": "Fungal disease causing dark, scabby lesions on leaves and fruit.",
         "treatments": [
             {
                 "id": "t1",
+                "type": "organic",
                 "is_organic": true,
-                "effectiveness": 0.8,
+                "name": "Neem Oil Spray",
+                "effectiveness": 0.7,
                 "steps": [
                     {
+                        "order": 1,
+                        "action": "Remove infected leaves and fallen debris",
                         "timeframe": "today",
-                        "description": "Remove infected leaves."
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Spray neem oil solution (2 tbsp per gallon)",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Repeat spray every 7-10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    },
+                    {
+                        "order": 4,
+                        "action": "Improve air circulation by pruning",
+                        "timeframe": "week",
+                        "icon": "✂️"
                     }
+                ],
+                "safety_warnings": [
+                    "Avoid spraying in direct sunlight"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Captan Fungicide",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Wear protective gloves and mask",
+                        "timeframe": "today",
+                        "icon": "🧤"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Mix captan fungicide per label instructions",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Spray thoroughly on all leaf surfaces",
+                        "timeframe": "today",
+                        "icon": "💨"
+                    },
+                    {
+                        "order": 4,
+                        "action": "Repeat application after 10-14 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Keep away from children",
+                    "Do not harvest for 14 days after application"
                 ]
             }
         ],
+        "prevention": [
+            {
+                "action": "Plant scab-resistant apple varieties",
+                "importance": "high"
+            },
+            {
+                "action": "Rake and destroy fallen leaves in autumn",
+                "importance": "high"
+            }
+        ],
         "home_remedies": [
-            "Baking soda spray"
+            {
+                "name": "Baking Soda Spray",
+                "ingredients": [
+                    "1 tbsp baking soda",
+                    "1 gallon water",
+                    "few drops dish soap"
+                ],
+                "preparation": "Mix all ingredients",
+                "frequency": "Weekly",
+                "effectiveness": 0.5
+            }
+        ]
+    },
+    "Apple___Black_rot": {
+        "disease_name": "Black Rot",
+        "crop": "Apple",
+        "description": "Fungal disease causing dark, sunken lesions on fruit and leaf spots.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Spray",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove mummified fruit and cankers",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper-based fungicide",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Prune dead or diseased branches",
+                        "timeframe": "week",
+                        "icon": "✂️"
+                    }
+                ],
+                "safety_warnings": [
+                    "Copper can accumulate in soil with overuse"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Myclobutanil Fungicide",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Wear protective equipment",
+                        "timeframe": "today",
+                        "icon": "🧤"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply myclobutanil at petal fall",
+                        "timeframe": "today",
+                        "icon": "💨"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Repeat every 10 days during wet weather",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Observe pre-harvest interval"
+                ]
+            }
         ],
         "prevention": [
-            "Plant resistant varieties"
+            {
+                "action": "Remove dead wood and mummies annually",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Apple___Cedar_apple_rust": {
+        "disease_name": "Cedar Apple Rust",
+        "crop": "Apple",
+        "description": "Fungal disease causing bright orange spots on leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Sulfur Spray",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove nearby juniper/cedar trees if possible",
+                        "timeframe": "week",
+                        "icon": "🌲"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply sulfur-based fungicide in spring",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Repeat every 7 days during wet periods",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Do not apply sulfur in temperatures above 85°F"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Propiconazole",
+                "effectiveness": 0.88,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at pink bud stage",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat at bloom and petal fall",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Follow label rates carefully"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Plant rust-resistant varieties",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Apple___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Apple",
+        "description": "No disease detected. Your apple plant looks healthy!",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Continue regular watering and fertilization",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Blueberry___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Blueberry",
+        "description": "No disease detected. Your blueberry plant looks healthy!",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Maintain acidic soil pH (4.5-5.5)",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Cherry_(including_sour)___Powdery_mildew": {
+        "disease_name": "Powdery Mildew",
+        "crop": "Cherry",
+        "description": "White powdery coating on leaves and shoots.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Potassium Bicarbonate",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove heavily infected shoots",
+                        "timeframe": "today",
+                        "icon": "✂️"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Spray potassium bicarbonate solution",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Ensure good air circulation",
+                        "timeframe": "week",
+                        "icon": "💨"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Trifloxystrobin",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at first sign of disease",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 14 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Observe pre-harvest interval"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Avoid overhead watering",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": [
+            {
+                "name": "Milk Spray",
+                "ingredients": [
+                    "1 part milk",
+                    "9 parts water"
+                ],
+                "preparation": "Mix and spray weekly",
+                "frequency": "Weekly",
+                "effectiveness": 0.5
+            }
         ]
+    },
+    "Cherry_(including_sour)___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Cherry",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Prune for good air circulation",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+        "disease_name": "Gray Leaf Spot",
+        "crop": "Corn",
+        "description": "Rectangular gray-brown lesions on leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Crop Rotation",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove crop debris after harvest",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Rotate with non-host crops for 1-2 years",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Plant resistant hybrids next season",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Azoxystrobin Fungicide",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at V6-VT growth stage",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Use aerial or ground application",
+                        "timeframe": "today",
+                        "icon": "💨"
+                    }
+                ],
+                "safety_warnings": [
+                    "Follow label for application rates"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use resistant hybrids",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Corn_(maize)___Common_rust_": {
+        "disease_name": "Common Rust",
+        "crop": "Corn",
+        "description": "Small reddish-brown pustules on both leaf surfaces.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Resistant Varieties",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Monitor for early symptoms",
+                        "timeframe": "today",
+                        "icon": "🔍"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Remove heavily infected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Plan resistant hybrids for next season",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Mancozeb Fungicide",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply mancozeb at first sign of pustules",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-10 days if needed",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Wear protective equipment during application"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Plant early to avoid peak rust season",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Corn_(maize)___Northern_Leaf_Blight": {
+        "disease_name": "Northern Leaf Blight",
+        "crop": "Corn",
+        "description": "Long elliptical gray-green lesions on leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Tillage and Rotation",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Bury crop residue by tillage",
+                        "timeframe": "today",
+                        "icon": "🚜"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Rotate crops for 2 seasons",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Propiconazole + Azoxystrobin",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at tasseling stage",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Ensure good coverage of upper leaves",
+                        "timeframe": "today",
+                        "icon": "💨"
+                    }
+                ],
+                "safety_warnings": [
+                    "Follow pre-harvest interval on label"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use Ht-resistant hybrids",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Corn_(maize)___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Corn",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Maintain proper fertilization",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Grape___Black_rot": {
+        "disease_name": "Black Rot",
+        "crop": "Grape",
+        "description": "Brown circular lesions on leaves; fruit shrivels into hard mummies.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Sanitation + Copper",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove all mummified fruit",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper spray before bloom",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Improve canopy air flow via pruning",
+                        "timeframe": "week",
+                        "icon": "✂️"
+                    }
+                ],
+                "safety_warnings": [
+                    "Excess copper can harm vines"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Myclobutanil",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at shoot length 6-10 inches",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat at pre-bloom and post-bloom",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Rotate fungicide classes to prevent resistance"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Remove mummies and infected canes during dormancy",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Grape___Esca_(Black_Measles)": {
+        "disease_name": "Esca (Black Measles)",
+        "crop": "Grape",
+        "description": "Tiger-stripe pattern on leaves; dark spotting on berries.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Trunk Surgery",
+                "effectiveness": 0.5,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove dead wood and cankers",
+                        "timeframe": "today",
+                        "icon": "✂️"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Retrain new cordons from suckers",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": [
+                    "No proven cure; management only"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Thiophanate-methyl (pruning wound)",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply wound protectant after pruning",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Avoid pruning during wet weather",
+                        "timeframe": "week",
+                        "icon": "🌧️"
+                    }
+                ],
+                "safety_warnings": [
+                    "Limited chemical options available"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Protect pruning wounds",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+        "disease_name": "Leaf Blight",
+        "crop": "Grape",
+        "description": "Dark brown spots with yellow halos on leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Bordeaux Mixture",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove affected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply Bordeaux mixture spray",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Mancozeb",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply mancozeb at first symptoms",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Wear protective gear"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Ensure good air circulation in vineyard",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Grape___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Grape",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Maintain proper canopy management",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Orange___Haunglongbing_(Citrus_greening)": {
+        "disease_name": "Citrus Greening (HLB)",
+        "crop": "Orange",
+        "description": "Bacterial disease causing yellow shoots, lopsided fruit, and tree decline.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Nutritional Support",
+                "effectiveness": 0.4,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply foliar micronutrient spray (zinc, manganese)",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Maintain healthy root system with compost",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Control Asian citrus psyllid with kaolin clay",
+                        "timeframe": "week",
+                        "icon": "🐛"
+                    }
+                ],
+                "safety_warnings": [
+                    "No cure exists; management only"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Imidacloprid (psyllid control)",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply systemic insecticide to control psyllid vector",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Remove severely infected trees",
+                        "timeframe": "week",
+                        "icon": "🪓"
+                    }
+                ],
+                "safety_warnings": [
+                    "Harmful to pollinators; apply when bees are not active"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use disease-free nursery stock",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Peach___Bacterial_spot": {
+        "disease_name": "Bacterial Spot",
+        "crop": "Peach",
+        "description": "Small dark lesions on leaves and fruit; leaves may drop early.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Hydroxide",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply copper hydroxide at leaf fall",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat in early spring before bud break",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Excess copper can cause phytotoxicity"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Oxytetracycline",
+                "effectiveness": 0.75,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply oxytetracycline during bloom",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 5-7 days during wet weather",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Antibiotic resistance concerns"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Plant resistant varieties",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Peach___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Peach",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Proper pruning and sanitation",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Pepper,_bell___Bacterial_spot": {
+        "disease_name": "Bacterial Spot",
+        "crop": "Pepper",
+        "description": "Water-soaked lesions on leaves that turn brown; fruit spots.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Spray",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove infected plant parts",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper-based bactericide",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Avoid overhead irrigation",
+                        "timeframe": "week",
+                        "icon": "💧"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Streptomycin + Copper",
+                "effectiveness": 0.8,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply streptomycin tank-mixed with copper",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Rotate with mancozeb to prevent resistance",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Use only as directed on label"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use certified disease-free seed",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Pepper,_bell___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Pepper",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Rotate crops every 2-3 years",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Potato___Early_blight": {
+        "disease_name": "Early Blight",
+        "crop": "Potato",
+        "description": "Dark concentric ring lesions (target spots) on lower leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Neem + Compost Tea",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove lower infected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply neem oil spray",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Mulch around plants to prevent soil splash",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Chlorothalonil",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply chlorothalonil at first symptoms",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Observe pre-harvest interval"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use certified disease-free seed potatoes",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Potato___Late_blight": {
+        "disease_name": "Late Blight",
+        "crop": "Potato",
+        "description": "Water-soaked lesions that turn brown-black; white mold on undersides.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Fungicide",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Destroy infected plants immediately",
+                        "timeframe": "today",
+                        "icon": "🔥"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper fungicide preventatively",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": [
+                    "Late blight spreads extremely fast"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Metalaxyl + Mancozeb",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply Ridomil Gold (metalaxyl) immediately",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Follow up with mancozeb every 5-7 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Act quickly; this disease can destroy crops in days"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Plant resistant varieties; destroy volunteer potatoes",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Potato___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Potato",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Hill soil around plants for tuber protection",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Raspberry___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Raspberry",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Prune old canes after fruiting",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Soybean___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Soybean",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Rotate with non-legume crops",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Squash___Powdery_mildew": {
+        "disease_name": "Powdery Mildew",
+        "crop": "Squash",
+        "description": "White powdery patches on leaf surfaces.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Milk Spray",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove severely affected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Spray 40% milk / 60% water solution",
+                        "timeframe": "today",
+                        "icon": "🥛"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Repeat twice weekly",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Sulfur Dust",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Dust sulfur on affected leaves",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Do not apply above 90°F"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Plant mildew-resistant varieties",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": [
+            {
+                "name": "Baking Soda Spray",
+                "ingredients": [
+                    "1 tbsp baking soda",
+                    "1 gallon water",
+                    "1 tsp liquid soap"
+                ],
+                "preparation": "Mix and spray",
+                "frequency": "Weekly",
+                "effectiveness": 0.5
+            }
+        ]
+    },
+    "Strawberry___Leaf_scorch": {
+        "disease_name": "Leaf Scorch",
+        "crop": "Strawberry",
+        "description": "Small purple spots that enlarge; leaves appear scorched.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Sanitation + Renovation",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Mow and thin plants after harvest",
+                        "timeframe": "today",
+                        "icon": "✂️"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Remove infected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Improve drainage and air flow",
+                        "timeframe": "week",
+                        "icon": "💨"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Captan Fungicide",
+                "effectiveness": 0.8,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply captan in spring at first leaf growth",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 10-14 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Follow pre-harvest interval"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use resistant cultivars",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Strawberry___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Strawberry",
+        "description": "No disease detected.",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Renovate beds annually",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Bacterial_spot": {
+        "disease_name": "Bacterial Spot",
+        "crop": "Tomato",
+        "description": "Small dark spots on leaves and fruit; leaves may yellow.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Spray",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove infected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper hydroxide spray",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Avoid working with wet plants",
+                        "timeframe": "week",
+                        "icon": "💧"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Copper + Mancozeb",
+                "effectiveness": 0.8,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply copper-mancozeb mix",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 5-7 days during wet weather",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Avoid spraying in high heat"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use disease-free transplants",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Early_blight": {
+        "disease_name": "Early Blight",
+        "crop": "Tomato",
+        "description": "Concentric ring (target) spots on lower leaves, progressing upward.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Neem Oil + Mulch",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove lower infected leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply neem oil spray",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Mulch to prevent soil splash",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Chlorothalonil",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply chlorothalonil preventatively",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Observe pre-harvest interval"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Stake plants and remove suckers for air flow",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Late_blight": {
+        "disease_name": "Late Blight",
+        "crop": "Tomato",
+        "description": "Large water-soaked patches; white mold under leaves; rapid plant death.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper Fungicide",
+                "effectiveness": 0.5,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove and destroy infected plants",
+                        "timeframe": "today",
+                        "icon": "🔥"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper preventatively to healthy plants",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": [
+                    "Late blight is extremely aggressive"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Metalaxyl (Ridomil)",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply metalaxyl immediately",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Follow with chlorothalonil every 5 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Act immediately; delays can lose entire crop"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Avoid overhead watering; use resistant varieties",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Leaf_Mold": {
+        "disease_name": "Leaf Mold",
+        "crop": "Tomato",
+        "description": "Pale green to yellow spots on upper leaves; olive-green mold beneath.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Ventilation + Neem",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Improve greenhouse ventilation",
+                        "timeframe": "today",
+                        "icon": "💨"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Remove affected lower leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Spray neem oil weekly",
+                        "timeframe": "week",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Chlorothalonil",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at first symptoms",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-10 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Ensure good coverage on leaf undersides"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Reduce humidity; space plants properly",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Septoria_leaf_spot": {
+        "disease_name": "Septoria Leaf Spot",
+        "crop": "Tomato",
+        "description": "Many small circular spots with dark borders and gray centers on lower leaves.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Copper + Sanitation",
+                "effectiveness": 0.65,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove infected lower leaves",
+                        "timeframe": "today",
+                        "icon": "🍂"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper fungicide",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Mulch to prevent soil splash",
+                        "timeframe": "week",
+                        "icon": "🌱"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Mancozeb or Chlorothalonil",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply fungicide at first symptoms",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7 days during rainy periods",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Alternate fungicide classes"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Rotate tomatoes every 3 years",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Spider_mites Two-spotted_spider_mite": {
+        "disease_name": "Spider Mites",
+        "crop": "Tomato",
+        "description": "Tiny mites causing stippled yellow leaves and fine webbing.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Water Spray + Predators",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Spray plants with strong water jet",
+                        "timeframe": "today",
+                        "icon": "💧"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Release predatory mites (Phytoseiulus)",
+                        "timeframe": "week",
+                        "icon": "🐛"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Apply neem oil or insecticidal soap",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Abamectin Miticide",
+                "effectiveness": 0.85,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply abamectin to leaf undersides",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat after 7 days for egg hatch",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Avoid broad-spectrum insecticides that kill predators"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Keep plants well-watered; mites thrive in dry conditions",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Target_Spot": {
+        "disease_name": "Target Spot",
+        "crop": "Tomato",
+        "description": "Small brown spots with concentric rings on leaves and fruit.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Pruning + Copper",
+                "effectiveness": 0.6,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove lower canopy leaves",
+                        "timeframe": "today",
+                        "icon": "✂️"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Apply copper spray",
+                        "timeframe": "today",
+                        "icon": "🌿"
+                    }
+                ],
+                "safety_warnings": []
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Azoxystrobin + Difenoconazole",
+                "effectiveness": 0.9,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply at first symptoms",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Repeat every 7-14 days",
+                        "timeframe": "week",
+                        "icon": "🔄"
+                    }
+                ],
+                "safety_warnings": [
+                    "Rotate fungicide classes"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Increase plant spacing for air flow",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+        "disease_name": "Yellow Leaf Curl Virus",
+        "crop": "Tomato",
+        "description": "Upward leaf curling, yellowing, stunted growth; spread by whiteflies.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Whitefly Control",
+                "effectiveness": 0.5,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove and destroy infected plants",
+                        "timeframe": "today",
+                        "icon": "🔥"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Place yellow sticky traps for whiteflies",
+                        "timeframe": "today",
+                        "icon": "🪤"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Use reflective mulch to repel whiteflies",
+                        "timeframe": "week",
+                        "icon": "✨"
+                    }
+                ],
+                "safety_warnings": [
+                    "No cure for virus; manage vector"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "Imidacloprid (vector control)",
+                "effectiveness": 0.7,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Apply imidacloprid as soil drench",
+                        "timeframe": "today",
+                        "icon": "🧪"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Remove infected plants to reduce virus source",
+                        "timeframe": "today",
+                        "icon": "🔥"
+                    }
+                ],
+                "safety_warnings": [
+                    "Harmful to bees; apply at base, not on flowers"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use TYLCV-resistant varieties; use row covers",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___Tomato_mosaic_virus": {
+        "disease_name": "Tomato Mosaic Virus",
+        "crop": "Tomato",
+        "description": "Mottled light/dark green leaves; distorted growth.",
+        "treatments": [
+            {
+                "id": "t1",
+                "type": "organic",
+                "is_organic": true,
+                "name": "Sanitation + Removal",
+                "effectiveness": 0.4,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "Remove and destroy infected plants",
+                        "timeframe": "today",
+                        "icon": "🔥"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Disinfect tools with 10% bleach",
+                        "timeframe": "today",
+                        "icon": "🧴"
+                    },
+                    {
+                        "order": 3,
+                        "action": "Wash hands before handling other plants",
+                        "timeframe": "today",
+                        "icon": "🧤"
+                    }
+                ],
+                "safety_warnings": [
+                    "Highly contagious through touch; no cure"
+                ]
+            },
+            {
+                "id": "t2",
+                "type": "chemical",
+                "is_organic": false,
+                "name": "No Chemical Cure",
+                "effectiveness": 0.0,
+                "steps": [
+                    {
+                        "order": 1,
+                        "action": "No chemical treatment available for viruses",
+                        "timeframe": "today",
+                        "icon": "⚠️"
+                    },
+                    {
+                        "order": 2,
+                        "action": "Focus on prevention and sanitation",
+                        "timeframe": "today",
+                        "icon": "🧴"
+                    }
+                ],
+                "safety_warnings": [
+                    "Prevention is the only solution"
+                ]
+            }
+        ],
+        "prevention": [
+            {
+                "action": "Use resistant varieties; sterilize all tools",
+                "importance": "high"
+            }
+        ],
+        "home_remedies": []
+    },
+    "Tomato___healthy": {
+        "disease_name": "Healthy",
+        "crop": "Tomato",
+        "description": "No disease detected. Your tomato plant looks healthy!",
+        "treatments": [],
+        "prevention": [
+            {
+                "action": "Continue proper watering and staking",
+                "importance": "medium"
+            }
+        ],
+        "home_remedies": []
     }
 }

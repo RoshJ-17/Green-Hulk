@@ -39,7 +39,7 @@ __decorate([
     __metadata("design:type", String)
 ], ScanRecord.prototype, "fullLabel", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float'),
+    (0, typeorm_1.Column)("float"),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "confidence", void 0);
 __decorate([
@@ -47,7 +47,7 @@ __decorate([
     __metadata("design:type", String)
 ], ScanRecord.prototype, "severity", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float', { nullable: true }),
+    (0, typeorm_1.Column)("float", { nullable: true }),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "affectedAreaPercentage", void 0);
 __decorate([
@@ -55,11 +55,11 @@ __decorate([
     __metadata("design:type", String)
 ], ScanRecord.prototype, "heatmapPath", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float', { nullable: true }),
+    (0, typeorm_1.Column)("float", { nullable: true }),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "latitude", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float', { nullable: true }),
+    (0, typeorm_1.Column)("float", { nullable: true }),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "longitude", void 0);
 __decorate([
@@ -67,15 +67,15 @@ __decorate([
     __metadata("design:type", Boolean)
 ], ScanRecord.prototype, "isSynced", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'datetime', nullable: true }),
+    (0, typeorm_1.Column)({ type: "datetime", nullable: true }),
     __metadata("design:type", Date)
 ], ScanRecord.prototype, "lastSyncAttempt", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float', { nullable: true }),
+    (0, typeorm_1.Column)("float", { nullable: true }),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "imageBlurScore", void 0);
 __decorate([
-    (0, typeorm_1.Column)('float', { nullable: true }),
+    (0, typeorm_1.Column)("float", { nullable: true }),
     __metadata("design:type", Number)
 ], ScanRecord.prototype, "imageBrightness", void 0);
 __decorate([
@@ -83,6 +83,6 @@ __decorate([
     __metadata("design:type", Boolean)
 ], ScanRecord.prototype, "hadQualityWarnings", void 0);
 exports.ScanRecord = ScanRecord = __decorate([
-    (0, typeorm_1.Entity)('scan_records')
+    (0, typeorm_1.Entity)("scan_records")
 ], ScanRecord);
 //# sourceMappingURL=scan-record.entity.js.map

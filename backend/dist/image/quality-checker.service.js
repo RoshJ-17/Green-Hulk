@@ -18,15 +18,11 @@ const diagnosis_result_types_1 = require("../common/types/diagnosis-result.types
 let QualityCheckerService = QualityCheckerService_1 = class QualityCheckerService {
     constructor(imageProcessor, configService) {
         this.imageProcessor = imageProcessor;
-        this.configService = configService;
         this.logger = new common_1.Logger(QualityCheckerService_1.name);
         this.MIN_RESOLUTION = 224;
-        this.BLUR_THRESHOLD =
-            this.configService.get('BLUR_THRESHOLD') || 100.0;
-        this.MIN_BRIGHTNESS =
-            this.configService.get('MIN_BRIGHTNESS') || 50.0;
-        this.MAX_BRIGHTNESS =
-            this.configService.get('MAX_BRIGHTNESS') || 200.0;
+        this.BLUR_THRESHOLD = configService.get("BLUR_THRESHOLD") || 100.0;
+        this.MIN_BRIGHTNESS = configService.get("MIN_BRIGHTNESS") || 50.0;
+        this.MAX_BRIGHTNESS = configService.get("MAX_BRIGHTNESS") || 200.0;
     }
     async checkImageQuality(imageBuffer, metadata) {
         const issues = [];
@@ -37,7 +33,7 @@ let QualityCheckerService = QualityCheckerService_1 = class QualityCheckerServic
                 type: diagnosis_result_types_1.IssueType.BLUR,
                 severity: diagnosis_result_types_1.IssueSeverity.CRITICAL,
                 message: `Image is too blurry (score: ${blurScore.toFixed(0)})`,
-                suggestion: 'Hold camera steady and tap to focus before capturing.',
+                suggestion: "Hold camera steady and tap to focus before capturing.",
             });
         }
         const brightness = await this.imageProcessor.calculateBrightness(imageBuffer);
@@ -47,7 +43,7 @@ let QualityCheckerService = QualityCheckerService_1 = class QualityCheckerServic
                 type: diagnosis_result_types_1.IssueType.DARKNESS,
                 severity: diagnosis_result_types_1.IssueSeverity.WARNING,
                 message: `Image is too dark (brightness: ${brightness.toFixed(0)})`,
-                suggestion: 'Use natural daylight or turn on flash.',
+                suggestion: "Use natural daylight or turn on flash.",
             });
         }
         else if (brightness > this.MAX_BRIGHTNESS) {
@@ -55,15 +51,16 @@ let QualityCheckerService = QualityCheckerService_1 = class QualityCheckerServic
                 type: diagnosis_result_types_1.IssueType.OVEREXPOSURE,
                 severity: diagnosis_result_types_1.IssueSeverity.WARNING,
                 message: `Image is overexposed (brightness: ${brightness.toFixed(0)})`,
-                suggestion: 'Move to shade or reduce direct sunlight.',
+                suggestion: "Move to shade or reduce direct sunlight.",
             });
         }
-        if (metadata.width < this.MIN_RESOLUTION || metadata.height < this.MIN_RESOLUTION) {
+        if (metadata.width < this.MIN_RESOLUTION ||
+            metadata.height < this.MIN_RESOLUTION) {
             issues.push({
                 type: diagnosis_result_types_1.IssueType.LOW_RESOLUTION,
                 severity: diagnosis_result_types_1.IssueSeverity.CRITICAL,
                 message: `Image resolution too low (${metadata.width}x${metadata.height})`,
-                suggestion: 'Use camera at full resolution.',
+                suggestion: "Use camera at full resolution.",
             });
         }
         const hasCriticalIssues = issues.some((issue) => issue.severity === diagnosis_result_types_1.IssueSeverity.CRITICAL);
@@ -75,26 +72,26 @@ let QualityCheckerService = QualityCheckerService_1 = class QualityCheckerServic
     }
     getUserFriendlyMessage(result) {
         if (result.isGood) {
-            return 'Image quality is good ✓';
+            return "Image quality is good ✓";
         }
         const critical = result.issues.filter((i) => i.severity === diagnosis_result_types_1.IssueSeverity.CRITICAL);
         const warnings = result.issues.filter((i) => i.severity === diagnosis_result_types_1.IssueSeverity.WARNING);
         const lines = [];
         if (critical.length > 0) {
-            lines.push('❌ Critical Issues:');
+            lines.push("❌ Critical Issues:");
             for (const issue of critical) {
                 lines.push(`  • ${issue.message}`);
                 lines.push(`    → ${issue.suggestion}`);
             }
         }
         if (warnings.length > 0) {
-            lines.push('⚠️ Warnings:');
+            lines.push("⚠️ Warnings:");
             for (const issue of warnings) {
                 lines.push(`  • ${issue.message}`);
                 lines.push(`    → ${issue.suggestion}`);
             }
         }
-        return lines.join('\n');
+        return lines.join("\n");
     }
 };
 exports.QualityCheckerService = QualityCheckerService;

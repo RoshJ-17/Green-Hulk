@@ -44,61 +44,61 @@ let PreferencesController = class PreferencesController {
 };
 exports.PreferencesController = PreferencesController;
 __decorate([
-    (0, common_1.Get)(':userId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get user preferences' }),
-    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
+    (0, common_1.Get)(":userId"),
+    (0, swagger_1.ApiOperation)({ summary: "Get user preferences" }),
+    __param(0, (0, common_1.Param)("userId", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "getUserPreferences", null);
 __decorate([
-    (0, common_1.Post)(':userId/crop'),
-    (0, swagger_1.ApiOperation)({ summary: 'Save last selected crop' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Crop saved successfully' }),
-    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)('cropId')),
+    (0, common_1.Post)(":userId/crop"),
+    (0, swagger_1.ApiOperation)({ summary: "Save last selected crop" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Crop saved successfully" }),
+    __param(0, (0, common_1.Param)("userId", common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)("cropId")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "saveLastCrop", null);
 __decorate([
-    (0, common_1.Get)(':userId/crop/last'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get last selected crop' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Returns last selected crop' }),
-    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
+    (0, common_1.Get)(":userId/crop/last"),
+    (0, swagger_1.ApiOperation)({ summary: "Get last selected crop" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Returns last selected crop" }),
+    __param(0, (0, common_1.Param)("userId", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "getLastCrop", null);
 __decorate([
-    (0, common_1.Post)(':userId/language'),
-    (0, swagger_1.ApiOperation)({ summary: 'Save preferred language' }),
-    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)('language')),
+    (0, common_1.Post)(":userId/language"),
+    (0, swagger_1.ApiOperation)({ summary: "Save preferred language" }),
+    __param(0, (0, common_1.Param)("userId", common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)("language")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "saveLanguage", null);
 __decorate([
-    (0, common_1.Post)(':userId/organic'),
-    (0, swagger_1.ApiOperation)({ summary: 'Set organic treatment preference' }),
-    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)('preferOrganic')),
+    (0, common_1.Post)(":userId/organic"),
+    (0, swagger_1.ApiOperation)({ summary: "Set organic treatment preference" }),
+    __param(0, (0, common_1.Param)("userId", common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)("preferOrganic")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Boolean]),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "setOrganicPreference", null);
 __decorate([
-    (0, common_1.Get)('storage/info'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get storage information' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Returns storage statistics' }),
+    (0, common_1.Get)("storage/info"),
+    (0, swagger_1.ApiOperation)({ summary: "Get storage information" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Returns storage statistics" }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], PreferencesController.prototype, "getStorageInfo", null);
 exports.PreferencesController = PreferencesController = __decorate([
-    (0, swagger_1.ApiTags)('Preferences'),
-    (0, common_1.Controller)('api/preferences'),
+    (0, swagger_1.ApiTags)("Preferences"),
+    (0, common_1.Controller)("api/preferences"),
     __metadata("design:paramtypes", [user_preferences_service_1.UserPreferencesService,
         storage_utility_service_1.StorageUtilityService])
 ], PreferencesController);

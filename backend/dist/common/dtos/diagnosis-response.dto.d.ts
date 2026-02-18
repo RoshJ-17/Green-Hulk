@@ -1,4 +1,4 @@
-import { DiagnosisResult } from '@common/types/diagnosis-result.types';
+import { DiagnosisResult } from "@common/types/diagnosis-result.types";
 export declare class DiagnosisResponseDto {
     type: string;
     disease?: string;

@@ -1,9 +1,8 @@
-import { ConfigService } from '@nestjs/config';
-import { SupportedClassesService } from './supported-classes.service';
-import { OODResult } from '@common/types/diagnosis-result.types';
+import { ConfigService } from "@nestjs/config";
+import { SupportedClassesService } from "./supported-classes.service";
+import { OODResult } from "@common/types/diagnosis-result.types";
 export declare class OodDetectorService {
     private readonly supportedClasses;
-    private readonly configService;
     private readonly MAX_PROB_THRESHOLD;
     private readonly ENTROPY_THRESHOLD;
     private readonly TOP_K_MARGIN_THRESHOLD;

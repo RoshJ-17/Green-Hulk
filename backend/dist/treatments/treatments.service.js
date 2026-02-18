@@ -51,19 +51,19 @@ let TreatmentsService = TreatmentsService_1 = class TreatmentsService {
     constructor() {
         this.logger = new common_1.Logger(TreatmentsService_1.name);
         this.treatmentsCache = new Map();
-        if (__dirname.includes('dist')) {
-            this.treatmentsPath = path.join(__dirname, 'data', 'treatments.json');
+        if (__dirname.includes("dist")) {
+            this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
         }
         else {
-            this.treatmentsPath = path.join(__dirname, 'data', 'treatments.json');
+            this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
         }
-        const sourcePath = path.resolve(process.cwd(), 'src', 'treatments', 'data', 'treatments.json');
+        const sourcePath = path.resolve(process.cwd(), "src", "treatments", "data", "treatments.json");
         this.treatmentsPath = sourcePath;
         this.loadTreatments();
     }
     async loadTreatments() {
         try {
-            const fileContent = await fs.readFile(this.treatmentsPath, 'utf-8');
+            const fileContent = await fs.readFile(this.treatmentsPath, "utf-8");
             const treatments = JSON.parse(fileContent);
             Object.keys(treatments).forEach((key) => {
                 this.treatmentsCache.set(key, treatments[key]);
@@ -111,8 +111,8 @@ let TreatmentsService = TreatmentsService_1 = class TreatmentsService {
         if (!splitByTimeframe) {
             return { all: treatment.steps };
         }
-        const today = treatment.steps.filter((s) => s.timeframe === 'today');
-        const week = treatment.steps.filter((s) => s.timeframe === 'week');
+        const today = treatment.steps.filter((s) => s.timeframe === "today");
+        const week = treatment.steps.filter((s) => s.timeframe === "week");
         return { today, week };
     }
     async getHomeRemedies(diseaseKey) {
@@ -156,7 +156,7 @@ let TreatmentsService = TreatmentsService_1 = class TreatmentsService {
     async reloadTreatments() {
         this.treatmentsCache.clear();
         await this.loadTreatments();
-        this.logger.log('Treatments database reloaded');
+        this.logger.log("Treatments database reloaded");
     }
 };
 exports.TreatmentsService = TreatmentsService;

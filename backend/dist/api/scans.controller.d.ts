@@ -1,6 +1,6 @@
-import { ScanHistoryService } from '@database/services/scan-history.service';
-import { StorageUtilityService } from '@database/services/storage-utility.service';
-import { ScanRecord } from '@database/entities/scan-record.entity';
+import { ScanHistoryService } from "@database/services/scan-history.service";
+import { StorageUtilityService } from "@database/services/storage-utility.service";
+import { ScanRecord } from "@database/entities/scan-record.entity";
 export declare class ScansController {
     private readonly scanHistoryService;
     private readonly storageService;

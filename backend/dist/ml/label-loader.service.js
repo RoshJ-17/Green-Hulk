@@ -59,23 +59,23 @@ let LabelLoaderService = LabelLoaderService_1 = class LabelLoaderService {
         this.EXPECTED_CLASS_COUNT = 38;
     }
     async onModuleInit() {
-        this.logger.log('Initializing label loader...');
+        this.logger.log("Initializing label loader...");
         const result = await this.loadLabels();
         if (!result.isSuccess) {
             this.logger.warn(`Labels not loaded: ${result.error}`);
-            this.logger.warn('Server will start without label mapping capability');
+            this.logger.warn("Server will start without label mapping capability");
             return;
         }
         this.logger.log(`Labels loaded successfully: ${result.classCount} classes, ${result.crops?.size} crops`);
     }
     async loadLabels() {
         try {
-            const labelsPath = this.configService.get('LABELS_PATH');
+            const labelsPath = this.configService.get("LABELS_PATH");
             if (!labelsPath) {
-                throw new custom_exceptions_1.LabelLoadException('LABELS_PATH not configured');
+                throw new custom_exceptions_1.LabelLoadException("LABELS_PATH not configured");
             }
             const resolvedPath = path.resolve(labelsPath);
-            const jsonString = await fs.readFile(resolvedPath, 'utf-8');
+            const jsonString = await fs.readFile(resolvedPath, "utf-8");
             const jsonData = JSON.parse(jsonString);
             const classCount = Object.keys(jsonData).length;
             if (classCount !== this.EXPECTED_CLASS_COUNT) {
@@ -86,7 +86,7 @@ let LabelLoaderService = LabelLoaderService_1 = class LabelLoaderService {
             const seenIndices = new Set();
             const seenLabels = new Set();
             for (const [label, index] of Object.entries(jsonData)) {
-                if (typeof index !== 'number') {
+                if (typeof index !== "number") {
                     throw new custom_exceptions_1.LabelLoadException(`Class "${label}" has non-integer index: ${index}`);
                 }
                 if (seenIndices.has(index)) {
@@ -135,10 +135,10 @@ let LabelLoaderService = LabelLoaderService_1 = class LabelLoaderService {
     }
     validateExpectedClasses() {
         const expectedSamples = [
-            'Apple___Apple_scab',
-            'Tomato___healthy',
-            'Potato___Late_blight',
-            'Corn_(maize)___Common_rust_',
+            "Apple___Apple_scab",
+            "Tomato___healthy",
+            "Potato___Late_blight",
+            "Corn_(maize)___Common_rust_",
         ];
         const missing = [];
         for (const expected of expectedSamples) {
@@ -147,17 +147,17 @@ let LabelLoaderService = LabelLoaderService_1 = class LabelLoaderService {
             }
         }
         if (missing.length > 0) {
-            throw new custom_exceptions_1.LabelLoadException(`Missing expected PlantVillage classes: ${missing.join(', ')}. This may be a different dataset.`);
+            throw new custom_exceptions_1.LabelLoadException(`Missing expected PlantVillage classes: ${missing.join(", ")}. This may be a different dataset.`);
         }
-        const invalidLabels = Array.from(this.labelToIndex.keys()).filter((label) => !label.includes('___'));
+        const invalidLabels = Array.from(this.labelToIndex.keys()).filter((label) => !label.includes("___"));
         if (invalidLabels.length > 0) {
-            throw new custom_exceptions_1.LabelLoadException(`Invalid label format (missing "___" separator): ${invalidLabels.slice(0, 3).join(', ')}`);
+            throw new custom_exceptions_1.LabelLoadException(`Invalid label format (missing "___" separator): ${invalidLabels.slice(0, 3).join(", ")}`);
         }
     }
     extractCropList() {
         const crops = new Set();
         for (const label of this.labelToIndex.keys()) {
-            const crop = label.split('___')[0];
+            const crop = label.split("___")[0];
             const normalized = crop.split(/[,_(]/)[0].trim();
             crops.add(normalized);
         }

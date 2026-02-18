@@ -1,5 +1,5 @@
-import { UserPreferencesService } from '@database/services/user-preferences.service';
-import { StorageUtilityService } from '@database/services/storage-utility.service';
+import { UserPreferencesService } from "@database/services/user-preferences.service";
+import { StorageUtilityService } from "@database/services/storage-utility.service";
 export declare class PreferencesController {
     private readonly preferencesService;
     private readonly storageService;

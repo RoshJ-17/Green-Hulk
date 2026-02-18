@@ -50,7 +50,8 @@ const path = __importStar(require("path"));
 let StorageUtilityService = StorageUtilityService_1 = class StorageUtilityService {
     constructor() {
         this.logger = new common_1.Logger(StorageUtilityService_1.name);
-        this.dataDirectory = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+        this.dataDirectory =
+            process.env.DATA_DIR || path.join(process.cwd(), "data");
     }
     async calculateDirectorySize(dirPath) {
         let totalSize = 0;
@@ -74,7 +75,7 @@ let StorageUtilityService = StorageUtilityService_1 = class StorageUtilityServic
         return totalSize;
     }
     async getStorageInfo() {
-        this.logger.debug('Calculating storage information...');
+        this.logger.debug("Calculating storage information...");
         const totalSizeBytes = await this.calculateDirectorySize(this.dataDirectory);
         const fileCount = await this.countFiles(this.dataDirectory);
         const breakdown = await this.getStorageBreakdown();
@@ -118,19 +119,20 @@ let StorageUtilityService = StorageUtilityService_1 = class StorageUtilityServic
             other: 0,
         };
         try {
-            const imagesPath = path.join(this.dataDirectory, 'images');
+            const imagesPath = path.join(this.dataDirectory, "images");
             breakdown.images = await this.calculateDirectorySize(imagesPath);
-            const dbPath = path.join(this.dataDirectory, 'database.sqlite');
+            const dbPath = path.join(this.dataDirectory, "database.sqlite");
             try {
                 const dbStats = await fs.stat(dbPath);
                 breakdown.database = dbStats.size;
             }
             catch {
             }
-            const audioPath = path.join(this.dataDirectory, 'audio');
+            const audioPath = path.join(this.dataDirectory, "audio");
             breakdown.audio = await this.calculateDirectorySize(audioPath);
             const totalSize = await this.calculateDirectorySize(this.dataDirectory);
-            breakdown.other = totalSize - (breakdown.images + breakdown.database + breakdown.audio);
+            breakdown.other =
+                totalSize - (breakdown.images + breakdown.database + breakdown.audio);
         }
         catch (error) {
             this.logger.warn(`Error calculating storage breakdown: ${error.message}`);
@@ -139,9 +141,9 @@ let StorageUtilityService = StorageUtilityService_1 = class StorageUtilityServic
     }
     formatBytes(bytes) {
         if (bytes === 0)
-            return '0 Bytes';
+            return "0 Bytes";
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     }
@@ -150,7 +152,7 @@ let StorageUtilityService = StorageUtilityService_1 = class StorageUtilityServic
         const cutoffDate = Date.now() - daysOld * 24 * 60 * 60 * 1000;
         let filesDeleted = 0;
         let spaceFreed = 0;
-        const imagesPath = path.join(this.dataDirectory, 'images');
+        const imagesPath = path.join(this.dataDirectory, "images");
         try {
             const files = await fs.readdir(imagesPath);
             for (const file of files) {

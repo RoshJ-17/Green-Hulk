@@ -17,11 +17,11 @@ let PredictionValidatorService = class PredictionValidatorService {
     constructor(configService) {
         this.configService = configService;
         this.CONFIDENCE_THRESHOLD =
-            this.configService.get('CONFIDENCE_THRESHOLD') || 0.5;
+            this.configService.get("CONFIDENCE_THRESHOLD") || 0.5;
         this.HIGH_CONFIDENCE_THRESHOLD =
-            this.configService.get('HIGH_CONFIDENCE_THRESHOLD') || 0.7;
+            this.configService.get("HIGH_CONFIDENCE_THRESHOLD") || 0.7;
         this.VERY_HIGH_CONFIDENCE =
-            this.configService.get('VERY_HIGH_CONFIDENCE') || 0.9;
+            this.configService.get("VERY_HIGH_CONFIDENCE") || 0.9;
     }
     getStatus(confidence) {
         if (confidence < this.CONFIDENCE_THRESHOLD) {
@@ -55,12 +55,12 @@ let PredictionValidatorService = class PredictionValidatorService {
     }
     getSeverityFromConfidence(confidence) {
         if (confidence < this.CONFIDENCE_THRESHOLD)
-            return 'Unknown';
+            return "Unknown";
         if (confidence < this.HIGH_CONFIDENCE_THRESHOLD)
-            return 'Early Stage';
+            return "Early Stage";
         if (confidence < this.VERY_HIGH_CONFIDENCE)
-            return 'Medium';
-        return 'Severe';
+            return "Medium";
+        return "Severe";
     }
 };
 exports.PredictionValidatorService = PredictionValidatorService;

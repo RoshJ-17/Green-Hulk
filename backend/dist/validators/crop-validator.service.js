@@ -25,7 +25,7 @@ let CropValidatorService = class CropValidatorService {
         const normalizedPredicted = this.supportedClasses.normalizeCropName(predictedCrop);
         if (normalizedSelected !== normalizedPredicted) {
             return {
-                type: 'wrongCrop',
+                type: "wrongCrop",
                 selectedCrop,
                 detectedCrop: predictedCrop,
                 message: `This appears to be ${predictedCrop}, but you selected ${selectedCrop}.\n\n` +
@@ -36,7 +36,7 @@ let CropValidatorService = class CropValidatorService {
         }
         if (confidence < 0.5) {
             return {
-                type: 'lowQuality',
+                type: "lowQuality",
                 message: `Image quality too poor for accurate detection.\n\n` +
                     `Please ensure:\n` +
                     `✓ Good lighting (natural daylight preferred)\n` +
@@ -45,17 +45,17 @@ let CropValidatorService = class CropValidatorService {
                     `✓ Close-up view of symptoms`,
             };
         }
-        const disease = predictedLabel.split('___')[1];
+        const disease = predictedLabel.split("___")[1];
         const severity = this.predictionValidator.getSeverityFromConfidence(confidence);
         return {
-            type: 'valid',
+            type: "valid",
             disease,
             confidence,
             severity,
         };
     }
     extractCropName(label) {
-        return label.split('___')[0];
+        return label.split("___")[0];
     }
 };
 exports.CropValidatorService = CropValidatorService;

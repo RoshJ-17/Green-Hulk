@@ -18,18 +18,18 @@ var SeverityColor;
 class SeverityHelper {
     static getSeverityColor(severity) {
         const severityLower = severity.toLowerCase();
-        if (severityLower === 'healthy' || severityLower === 'safe') {
+        if (severityLower === "healthy" || severityLower === "safe") {
             return SeverityColor.SAFE;
         }
-        if (severityLower === 'early_stage' ||
-            severityLower === 'early' ||
-            severityLower === 'mild' ||
-            severityLower === 'moderate') {
+        if (severityLower === "early_stage" ||
+            severityLower === "early" ||
+            severityLower === "mild" ||
+            severityLower === "moderate") {
             return SeverityColor.EARLY_STAGE;
         }
-        if (severityLower === 'severe' ||
-            severityLower === 'critical' ||
-            severityLower === 'urgent') {
+        if (severityLower === "severe" ||
+            severityLower === "critical" ||
+            severityLower === "urgent") {
             return SeverityColor.URGENT;
         }
         return SeverityColor.EARLY_STAGE;
@@ -38,18 +38,18 @@ class SeverityHelper {
         const color = this.getSeverityColor(severity);
         return color === SeverityColor.URGENT;
     }
-    static getSeverityMessage(severity, language = 'en') {
+    static getSeverityMessage(severity, language = "en") {
         const color = this.getSeverityColor(severity);
         const messages = {
             en: {
-                [SeverityColor.SAFE]: 'Your plant appears healthy',
-                [SeverityColor.EARLY_STAGE]: 'Early stage detected - take action soon to prevent spread',
-                [SeverityColor.URGENT]: '⚠️ URGENT: Severe infection detected - immediate treatment required!',
+                [SeverityColor.SAFE]: "Your plant appears healthy",
+                [SeverityColor.EARLY_STAGE]: "Early stage detected - take action soon to prevent spread",
+                [SeverityColor.URGENT]: "⚠️ URGENT: Severe infection detected - immediate treatment required!",
             },
             ta: {
-                [SeverityColor.SAFE]: 'உங்கள் செடி ஆரோக்கியமாக உள்ளது',
-                [SeverityColor.EARLY_STAGE]: 'ஆரம்ப நிலை கண்டறியப்பட்டது - பரவாமல் தடுக்க விரைவில் நடவடிக்கை எடுக்கவும்',
-                [SeverityColor.URGENT]: '⚠️ அவசரம்: கடுமையான தொற்று கண்டறியப்பட்டது - உடனடி சிகிச்சை தேவை!',
+                [SeverityColor.SAFE]: "உங்கள் செடி ஆரோக்கியமாக உள்ளது",
+                [SeverityColor.EARLY_STAGE]: "ஆரம்ப நிலை கண்டறியப்பட்டது - பரவாமல் தடுக்க விரைவில் நடவடிக்கை எடுக்கவும்",
+                [SeverityColor.URGENT]: "⚠️ அவசரம்: கடுமையான தொற்று கண்டறியப்பட்டது - உடனடி சிகிச்சை தேவை!",
             },
         };
         return messages[language]?.[color] || messages.en[color];
@@ -57,27 +57,27 @@ class SeverityHelper {
     static getSeverityIcon(severity) {
         const color = this.getSeverityColor(severity);
         const icons = {
-            [SeverityColor.SAFE]: 'check_circle',
-            [SeverityColor.EARLY_STAGE]: 'warning',
-            [SeverityColor.URGENT]: 'error',
+            [SeverityColor.SAFE]: "check_circle",
+            [SeverityColor.EARLY_STAGE]: "warning",
+            [SeverityColor.URGENT]: "error",
         };
         return icons[color];
     }
     static getSeverityHexColor(severity) {
         const color = this.getSeverityColor(severity);
         const hexColors = {
-            [SeverityColor.SAFE]: '#4CAF50',
-            [SeverityColor.EARLY_STAGE]: '#FFC107',
-            [SeverityColor.URGENT]: '#F44336',
+            [SeverityColor.SAFE]: "#4CAF50",
+            [SeverityColor.EARLY_STAGE]: "#FFC107",
+            [SeverityColor.URGENT]: "#F44336",
         };
         return hexColors[color];
     }
     static getActionTimeframe(severity) {
         const color = this.getSeverityColor(severity);
         const timeframes = {
-            [SeverityColor.SAFE]: 'No immediate action needed',
-            [SeverityColor.EARLY_STAGE]: 'Take action within 2-3 days',
-            [SeverityColor.URGENT]: 'Take action immediately',
+            [SeverityColor.SAFE]: "No immediate action needed",
+            [SeverityColor.EARLY_STAGE]: "Take action within 2-3 days",
+            [SeverityColor.URGENT]: "Take action immediately",
         };
         return timeframes[color];
     }
@@ -88,13 +88,13 @@ class SeverityHelper {
     static getNotificationPriority(severity) {
         const color = this.getSeverityColor(severity);
         const priorities = {
-            [SeverityColor.SAFE]: 'low',
-            [SeverityColor.EARLY_STAGE]: 'medium',
-            [SeverityColor.URGENT]: 'high',
+            [SeverityColor.SAFE]: "low",
+            [SeverityColor.EARLY_STAGE]: "medium",
+            [SeverityColor.URGENT]: "high",
         };
         return priorities[color];
     }
-    static formatSeverityDisplay(severity, language = 'en') {
+    static formatSeverityDisplay(severity, language = "en") {
         return {
             color: this.getSeverityColor(severity),
             hexColor: this.getSeverityHexColor(severity),

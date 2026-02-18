@@ -49,94 +49,94 @@ let TreatmentsController = class TreatmentsController {
 };
 exports.TreatmentsController = TreatmentsController;
 __decorate([
-    (0, common_1.Get)('diseases'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get all available diseases' }),
+    (0, common_1.Get)("diseases"),
+    (0, swagger_1.ApiOperation)({ summary: "Get all available diseases" }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getAllDiseases", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get treatments for a disease' }),
+    (0, common_1.Get)(":diseaseKey"),
+    (0, swagger_1.ApiOperation)({ summary: "Get treatments for a disease" }),
     (0, swagger_1.ApiQuery)({
-        name: 'organicOnly',
+        name: "organicOnly",
         required: false,
         type: Boolean,
-        description: 'Filter for organic treatments only',
+        description: "Filter for organic treatments only",
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns all treatments for the disease',
+        description: "Returns all treatments for the disease",
     }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
-    __param(1, (0, common_1.Query)('organicOnly', new common_1.ParseBoolPipe({ optional: true }))),
+    __param(0, (0, common_1.Param)("diseaseKey")),
+    __param(1, (0, common_1.Query)("organicOnly", new common_1.ParseBoolPipe({ optional: true }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Boolean]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getTreatments", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey/organic'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get organic treatments only' }),
+    (0, common_1.Get)(":diseaseKey/organic"),
+    (0, swagger_1.ApiOperation)({ summary: "Get organic treatments only" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Returns organic treatments',
+        description: "Returns organic treatments",
     }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
+    __param(0, (0, common_1.Param)("diseaseKey")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getOrganicTreatments", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey/chemical'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get chemical treatments' }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
+    (0, common_1.Get)(":diseaseKey/chemical"),
+    (0, swagger_1.ApiOperation)({ summary: "Get chemical treatments" }),
+    __param(0, (0, common_1.Param)("diseaseKey")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getChemicalTreatments", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey/steps/:treatmentId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get treatment steps' }),
+    (0, common_1.Get)(":diseaseKey/steps/:treatmentId"),
+    (0, swagger_1.ApiOperation)({ summary: "Get treatment steps" }),
     (0, swagger_1.ApiQuery)({
-        name: 'split',
+        name: "split",
         required: false,
         type: Boolean,
-        description: 'Split steps by timeframe (today/week)',
+        description: "Split steps by timeframe (today/week)",
     }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
-    __param(1, (0, common_1.Param)('treatmentId')),
-    __param(2, (0, common_1.Query)('split', new common_1.ParseBoolPipe({ optional: true }))),
+    __param(0, (0, common_1.Param)("diseaseKey")),
+    __param(1, (0, common_1.Param)("treatmentId")),
+    __param(2, (0, common_1.Query)("split", new common_1.ParseBoolPipe({ optional: true }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, Boolean]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getTreatmentSteps", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey/home-remedies'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get home remedies' }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
+    (0, common_1.Get)(":diseaseKey/home-remedies"),
+    (0, swagger_1.ApiOperation)({ summary: "Get home remedies" }),
+    __param(0, (0, common_1.Param)("diseaseKey")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getHomeRemedies", null);
 __decorate([
-    (0, common_1.Get)(':diseaseKey/prevention'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get prevention guidelines' }),
-    __param(0, (0, common_1.Param)('diseaseKey')),
+    (0, common_1.Get)(":diseaseKey/prevention"),
+    (0, swagger_1.ApiOperation)({ summary: "Get prevention guidelines" }),
+    __param(0, (0, common_1.Param)("diseaseKey")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getPreventionTips", null);
 __decorate([
-    (0, common_1.Get)('crop/:cropType'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get treatments by crop type' }),
-    __param(0, (0, common_1.Param)('cropType')),
+    (0, common_1.Get)("crop/:cropType"),
+    (0, swagger_1.ApiOperation)({ summary: "Get treatments by crop type" }),
+    __param(0, (0, common_1.Param)("cropType")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TreatmentsController.prototype, "getTreatmentsByCrop", null);
 exports.TreatmentsController = TreatmentsController = __decorate([
-    (0, swagger_1.ApiTags)('Treatments'),
-    (0, common_1.Controller)('api/treatments'),
+    (0, swagger_1.ApiTags)("Treatments"),
+    (0, common_1.Controller)("api/treatments"),
     __metadata("design:paramtypes", [treatments_service_1.TreatmentsService])
 ], TreatmentsController);
 //# sourceMappingURL=treatments.controller.js.map

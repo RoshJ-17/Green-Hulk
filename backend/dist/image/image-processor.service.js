@@ -24,7 +24,7 @@ let ImageProcessorService = ImageProcessorService_1 = class ImageProcessorServic
             const image = (0, sharp_1.default)(buffer);
             const metadata = await image.metadata();
             if (!metadata.width || !metadata.height) {
-                throw new custom_exceptions_1.ImageProcessingException('Invalid image: missing dimensions');
+                throw new custom_exceptions_1.ImageProcessingException("Invalid image: missing dimensions");
             }
             return image;
         }
@@ -40,7 +40,7 @@ let ImageProcessorService = ImageProcessorService_1 = class ImageProcessorServic
             let image = (0, sharp_1.default)(imageBuffer);
             const metadata = await image.metadata();
             if (!metadata.width || !metadata.height) {
-                throw new custom_exceptions_1.ImageProcessingException('Invalid image dimensions');
+                throw new custom_exceptions_1.ImageProcessingException("Invalid image dimensions");
             }
             const size = Math.min(metadata.width, metadata.height);
             const xOffset = Math.floor((metadata.width - size) / 2);
@@ -51,7 +51,6 @@ let ImageProcessorService = ImageProcessorService_1 = class ImageProcessorServic
                 width: size,
                 height: size,
             });
-            image = image.normalize();
             image = image.resize(this.INPUT_SIZE, this.INPUT_SIZE, {
                 kernel: sharp_1.default.kernel.cubic,
             });
@@ -72,7 +71,7 @@ let ImageProcessorService = ImageProcessorService_1 = class ImageProcessorServic
         const float32Data = new Float32Array(width * height * 3);
         let bufferIndex = 0;
         for (let i = 0; i < buffer.length; i++) {
-            float32Data[bufferIndex++] = buffer[i] / 255.0;
+            float32Data[bufferIndex++] = (buffer[i] - 127.5) / 127.5;
         }
         return float32Data;
     }
