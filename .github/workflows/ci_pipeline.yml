@@ -1,0 +1,97 @@
+name: Green-Hulk Full Stack CI
+
+on:
+  push:
+    branches: [ "plant-diagnosis", "main", "master" ]
+  pull_request:
+    branches: [ "plant-diagnosis", "main", "master" ]
+
+# Cancel in-progress runs on same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Backend CI (NestJS + Python Microservice)
+  # --------------------------------------------------------------------------
+  backend-ci:
+    name: Backend CI (NestJS)
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # --- Node.js API Setup ---
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install Node Dependencies
+      run: npm ci
+
+    - name: Lint Code
+      run: npm run lint
+
+    - name: Build Application
+      run: npm run build
+
+    # --- Python Microservice Setup (Optional Check) ---
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tensorflow flask flask-cors numpy
+
+    - name: Verify Python Script Syntax
+      run: python -m py_compile tflite_service.py
+
+  # --------------------------------------------------------------------------
+  # Frontend CI (Flutter)
+  # --------------------------------------------------------------------------
+  frontend-ci:
+    name: Frontend CI (Flutter)
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        flutter-version: '3.38.9'
+        cache: true
+
+    - name: Install Flutter Dependencies
+      run: flutter pub get
+
+    - name: Analyze Code
+      run: flutter analyze
+
+    - name: Build Android APK (Debug)
+      # We build debug just to verify it compiles, it's faster than release
+      run: flutter build apk --debug --no-pub
