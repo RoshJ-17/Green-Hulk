@@ -68,7 +68,7 @@ class LanguageSelectionScreen extends StatelessWidget {
       child: InkWell(
         onTap: () {
           onLanguageSelected(Locale(languageCode));
-          Navigator.pushReplacementNamed(context, '/crops');
+          Navigator.pushReplacementNamed(context, '/main');
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(

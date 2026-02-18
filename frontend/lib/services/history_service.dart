@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 import '../models/scan_result.dart';
 
 class HistoryService {
@@ -19,9 +22,19 @@ class HistoryService {
     _history.clear();
   }
 
-  /// Placeholder for fetching history from backend/local storage
+  /// Fetch history from backend API
   static Future<void> fetchHistory() async {
-    // In a real app, this would fetch from a local database or API
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final response = await http.get(Uri.parse('${ApiConfig.apiUrl}/scans/history?limit=50'));
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        _history.clear();
+        _history.addAll(data.map((json) => ScanResult.fromJson(json)).toList());
+      }
+    } catch (e) {
+      print('Error fetching history: $e');
+      // Keep existing history on error or handle as needed
+    }
   }
 }

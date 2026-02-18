@@ -35,7 +35,6 @@ class _SignupScreenState extends State<SignupScreen> {
         fullName: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
-        // TODO: Backend does not support phone number yet
       );
 
       if (!mounted) return;

@@ -8,20 +8,20 @@ import 'scan_camera_screen.dart';
 import '../models/scan_result.dart';
 
 const List<Map<String, String>> crops = [
-  {'name': 'Corn', 'asset': 'assets/icons/corn.png'},
-  {'name': 'Tomato', 'asset': 'assets/icons/tomato.png'},
-  {'name': 'Apple', 'asset': ''},
-  {'name': 'Blueberry', 'asset': ''},
-  {'name': 'Cherry', 'asset': ''},
-  {'name': 'Grape', 'asset': ''},
-  {'name': 'Orange', 'asset': ''},
-  {'name': 'Peach', 'asset': ''},
-  {'name': 'Pepper', 'asset': ''},
-  {'name': 'Potato', 'asset': ''},
-  {'name': 'Raspberry', 'asset': ''},
-  {'name': 'Soybean', 'asset': ''},
-  {'name': 'Squash', 'asset': ''},
-  {'name': 'Strawberry', 'asset': ''},
+  {'name': 'Apple', 'asset': 'icons/apple.jpg'},
+  {'name': 'Blueberry', 'asset': 'icons/blueberry.jpg'},
+  {'name': 'Cherry', 'asset': 'icons/cherry.jpg'},
+  {'name': 'Corn', 'asset': 'icons/corn.png'},
+  {'name': 'Grape', 'asset': 'icons/grapes.jpg'},
+  {'name': 'Orange', 'asset': 'icons/orange.jpg'},
+  {'name': 'Peach', 'asset': 'icons/peach.jpg'},
+  {'name': 'Pepper', 'asset': 'icons/pepper.jpg'},
+  {'name': 'Potato', 'asset': 'icons/potato.jpg'},
+  {'name': 'Raspberry', 'asset': 'icons/raspberry.jpg'},
+  {'name': 'Soybean', 'asset': 'icons/soyabean.jpg'},
+  {'name': 'Squash', 'asset': 'icons/squash.jpg'},
+  {'name': 'Strawberry', 'asset': 'icons/strawberry.jpg'},
+  {'name': 'Tomato', 'asset': 'icons/tomato.png'},
 ];
 
 class CropSelectionScreen extends StatefulWidget {
@@ -629,32 +629,40 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppTheme.lightGreen.withValues(alpha: 0.2)
                               : Colors.grey.shade50,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primaryGreen.withValues(alpha: 0.3)
+                                : Colors.grey.shade200,
+                            width: 2,
+                          ),
                         ),
-                        child: assetPath.isNotEmpty
-                            ? Image.asset(
-                                assetPath,
-                                fit: BoxFit.contain,
-                                errorBuilder: (ctx, error, stackTrace) => Icon(
+                        child: ClipOval(
+                          child: assetPath.isNotEmpty
+                              ? Image.asset(
+                                  assetPath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, error, stackTrace) => Icon(
+                                    Icons.agriculture,
+                                    size: 40,
+                                    color: isSelected
+                                        ? AppTheme.primaryGreen
+                                        : Colors.grey.shade400,
+                                  ),
+                                )
+                              : Icon(
                                   Icons.agriculture,
-                                  size: 50,
+                                  size: 40,
                                   color: isSelected
                                       ? AppTheme.primaryGreen
                                       : Colors.grey.shade400,
                                 ),
-                              )
-                            : Icon(
-                                Icons.agriculture,
-                                size: 50,
-                                color: isSelected
-                                    ? AppTheme.primaryGreen
-                                    : Colors.grey.shade400,
-                              ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
