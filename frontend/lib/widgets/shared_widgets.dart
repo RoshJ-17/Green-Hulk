@@ -1,87 +1,31 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 
-// Task 3: Extra-large button widget for easy tapping
-class LargeButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onPressed;
-  final IconData? icon;
-
-  const LargeButton({
-    Key? key,
-    required this.text,
-    required this.onPressed,
-    this.icon,
-  }) : super(key: key);
+/// NO INTERNET - LOCAL SCAN BADGE
+class OfflineBadge extends StatelessWidget {
+  const OfflineBadge({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 70),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: AppTheme.iconSize),
-            const SizedBox(width: 16),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.visible, // Task 6: Prevent text cutoff
-              softWrap: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Task 4: Organic treatment icon widget
-class OrganicBadge extends StatelessWidget {
-  final bool isOrganic;
-
-  const OrganicBadge({
-    Key? key,
-    required this.isOrganic,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isOrganic) return const SizedBox.shrink();
-    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.organicGreen.withOpacity(0.15),
-        border: Border.all(color: AppTheme.organicGreen, width: 2),
+        color: Colors.orange,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.eco, // Leaf icon for organic
-            color: AppTheme.organicGreen,
-            size: 22,
-          ),
-          const SizedBox(width: 6),
+          Icon(Icons.wifi_off, color: Colors.white, size: 16),
+          SizedBox(width: 6),
           Text(
-            'Organic',
+            'No Internet - Local Scan',
             style: TextStyle(
-              color: AppTheme.organicGreen,
-              fontSize: 16,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
         ],
@@ -90,240 +34,270 @@ class OrganicBadge extends StatelessWidget {
   }
 }
 
-// Crop icon card for grid layout (Task 8)
-class CropIconCard extends StatelessWidget {
-  final String cropName;
-  final String assetPath;
-  final VoidCallback onTap;
+/// CONFIDENCE BADGE - Displays "90% Certain" etc.
+class ConfidenceBadge extends StatelessWidget {
+  final double confidence;
+  const ConfidenceBadge({super.key, required this.confidence});
 
-  const CropIconCard({
-    Key? key,
-    required this.cropName,
-    required this.assetPath,
-    required this.onTap,
-  }) : super(key: key);
+  Color _getColor() {
+    if (confidence >= 0.9) return Colors.green;
+    if (confidence >= 0.7) return Colors.orange;
+    return Colors.red;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                assetPath,
-                width: 56,
-                height: 56,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.agriculture,
-                    size: 56,
-                    color: AppTheme.accentGreen,
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-              Text(
-                cropName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryGreen,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.visible,
-                softWrap: true,
-              ),
-            ],
-          ),
+    final percentage = (confidence * 100).toStringAsFixed(0);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _getColor(),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '$percentage% Certain',
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );
   }
 }
 
-// History item card (Task 5)
+/// DISEASE NAME DISPLAY
+class DiseaseNameDisplay extends StatelessWidget {
+  final String diseaseName;
+  final bool hasDisease;
+  const DiseaseNameDisplay({
+    super.key,
+    required this.diseaseName,
+    required this.hasDisease,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      hasDisease ? diseaseName : 'Healthy - No Disease Detected',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: hasDisease ? Colors.red.shade700 : Colors.green.shade700,
+      ),
+    );
+  }
+}
+
+/// VOICE SEARCH BUTTON
+class VoiceSearchButton extends StatelessWidget {
+  final bool isListening;
+  final VoidCallback onPressed;
+  const VoiceSearchButton({
+    super.key,
+    required this.isListening,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'voice_search',
+      backgroundColor: isListening ? Colors.red : Colors.blue,
+      onPressed: onPressed,
+      child: Icon(isListening ? Icons.mic : Icons.mic_none),
+    );
+  }
+}
+
+/// AUDIO BUTTON - Plays audio when clicked
+class AudioButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+  final Color? backgroundColor;
+  const AudioButton({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      style: backgroundColor != null
+          ? ElevatedButton.styleFrom(backgroundColor: backgroundColor)
+          : null,
+      onPressed: () {
+        // Audio feedback handled by caller
+        onPressed();
+      },
+      child: child,
+    );
+  }
+}
+
+/// ORGANIC BADGE
+class OrganicBadge extends StatelessWidget {
+  final bool isOrganic;
+  const OrganicBadge({super.key, required this.isOrganic});
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: const Icon(Icons.eco, color: Colors.white),
+      label: const Text("Organic Safe"),
+      backgroundColor: Colors.green,
+      labelStyle: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+}
+
+/// STAR RATING WIDGET
+class StarRating extends StatelessWidget {
+  final int rating;
+  final Function(int) onChanged;
+  const StarRating({super.key, required this.rating, required this.onChanged});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        return IconButton(
+          icon: Icon(
+            index < rating ? Icons.star : Icons.star_border,
+            color: Colors.orange,
+            size: 32,
+          ),
+          onPressed: () => onChanged(index + 1),
+        );
+      }),
+    );
+  }
+}
+
+/// LOADING OVERLAY
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black54,
+      child: const Center(
+        child: CircularProgressIndicator(color: Colors.green),
+      ),
+    );
+  }
+}
+
+/// SPEAK BUTTON (Reusable Voice)
+class SpeakButton extends StatefulWidget {
+  final String text;
+  const SpeakButton({super.key, required this.text});
+  @override
+  State<SpeakButton> createState() => _SpeakButtonState();
+}
+
+class _SpeakButtonState extends State<SpeakButton> {
+  final FlutterTts tts = FlutterTts();
+  bool speaking = false;
+  Future<void> toggle() async {
+    if (speaking) {
+      await tts.stop();
+      setState(() => speaking = false);
+    } else {
+      await tts.speak(widget.text);
+      setState(() => speaking = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: Icon(speaking ? Icons.stop : Icons.volume_up),
+      label: Text(speaking ? "Stop" : "Read"),
+      onPressed: toggle,
+    );
+  }
+}
+
+/// HISTORY ITEM CARD
 class HistoryItemCard extends StatelessWidget {
   final String imagePath;
   final String date;
   final String cropName;
   final VoidCallback onTap;
-
   const HistoryItemCard({
-    Key? key,
+    super.key,
     required this.imagePath,
     required this.date,
     required this.cropName,
     required this.onTap,
-  }) : super(key: key);
-
+  });
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingMedium,
-        vertical: AppTheme.spacingSmall,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Thumbnail
+              /// IMAGE
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  imagePath,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: AppTheme.lightGreen.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
+                child: imagePath.startsWith('assets')
+                    ? Image.asset(
+                        imagePath,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.image_not_supported, size: 50),
+                      )
+                    : kIsWeb
+                    ? Image.network(
+                        imagePath,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
+                      )
+                    : Image.file(
+                        File(imagePath),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
                       ),
-                      child: Icon(
-                        Icons.image,
-                        size: 36,
-                        color: AppTheme.accentGreen,
-                      ),
-                    );
-                  },
-                ),
               ),
-              const SizedBox(width: 14),
-              // Details
+              const SizedBox(width: 12),
+
+              /// TEXT AREA (IMPORTANT FIX)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       cropName,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryGreen,
-                      ),
-                      overflow: TextOverflow.visible,
-                      softWrap: true,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.accentGreen,
-                      ),
-                    ),
+                    const SizedBox(height: 4),
+                    Text(date, style: const TextStyle(color: Colors.grey)),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                size: 28,
-                color: AppTheme.lightGreen,
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Treatment step item (Task 11)
-class TreatmentStepCard extends StatelessWidget {
-  final int stepNumber;
-  final String title;
-  final String description;
-  final IconData icon;
-  final bool isOrganic;
-
-  const TreatmentStepCard({
-    Key? key,
-    required this.stepNumber,
-    required this.title,
-    required this.description,
-    required this.icon,
-    this.isOrganic = false,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingMedium,
-        vertical: AppTheme.spacingSmall,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Step number circle
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$stepNumber',
-                      style: const TextStyle(
-                        color: AppTheme.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(icon, size: 32, color: AppTheme.accentGreen),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryGreen,
-                    ),
-                    overflow: TextOverflow.visible,
-                    softWrap: true,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.primaryGreen,
-              ),
-              overflow: TextOverflow.visible,
-              softWrap: true,
-            ),
-            if (isOrganic) ...[
-              const SizedBox(height: 12),
-              OrganicBadge(isOrganic: true),
-            ],
-          ],
         ),
       ),
     );

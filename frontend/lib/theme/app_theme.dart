@@ -20,11 +20,19 @@ class AppTheme {
         primary: primaryGreen,
         secondary: accentGreen,
         surface: white,
-        background: cream,
+        // background: cream, // Deprecated
         onPrimary: white,
         onSecondary: white,
         onSurface: primaryGreen,
-        onBackground: primaryGreen,
+        // onBackground: primaryGreen, // Deprecated
+      ),
+      
+      // Native Page Transitions (Swipe Back support)
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
       ),
       
       // App Bar Theme
@@ -100,10 +108,10 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: white,
         elevation: 2,
-        shadowColor: primaryGreen.withOpacity(0.1),
+        shadowColor: primaryGreen.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: lightGreen.withOpacity(0.3), width: 1.5),
+          side: BorderSide(color: lightGreen.withValues(alpha: 0.3), width: 1.5),
         ),
       ),
       

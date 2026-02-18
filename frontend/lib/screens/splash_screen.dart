@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
+//import 'dart:async';
 import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -11,12 +11,20 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(context, '/login');
-    });
-  }
+void initState() {
+  super.initState();
+  _navigate();
+}
+
+Future<void> _navigate() async {
+  await Future.delayed(const Duration(seconds: 2));
+
+  if (!mounted) return;
+
+  Navigator.pushReplacementNamed(context, '/login');
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

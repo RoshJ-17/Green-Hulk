@@ -1,41 +1,23 @@
 import 'package:flutter/material.dart';
-import '../widgets/shared_widgets.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
+import '../services/history_service.dart';
+import '../widgets/shared_widgets.dart';
 
-// Task 5: History Screen
-class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({Key? key}) : super(key: key);
-
-  // Sample history data (in real app, this would come from database)
-  static final List<Map<String, String>> historyItems = [
-    {
-      'image': 'assets/images/scan_sample_1.png',
-      'date': '2024-02-03',
-      'crop': 'Rice - Leaf Blight',
-    },
-    {
-      'image': 'assets/images/scan_sample_2.png',
-      'date': '2024-02-01',
-      'crop': 'Tomato - Early Blight',
-    },
-    {
-      'image': 'assets/images/scan_sample_3.png',
-      'date': '2024-01-28',
-      'crop': 'Wheat - Rust Disease',
-    },
-    {
-      'image': 'assets/images/scan_sample_4.png',
-      'date': '2024-01-25',
-      'crop': 'Maize - Leaf Spot',
-    },
-  ];
+class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
 
   @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  @override
   Widget build(BuildContext context) {
+    final historyItems = HistoryService.history;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scan History'),
-      ),
+      appBar: AppBar(title: const Text('Scan History')),
       body: SafeArea(
         child: historyItems.isEmpty
             ? _buildEmptyState()
@@ -46,21 +28,63 @@ class HistoryScreen extends StatelessWidget {
                 itemCount: historyItems.length,
                 itemBuilder: (context, index) {
                   final item = historyItems[index];
-                  return HistoryItemCard(
-                    imagePath: item['image']!,
-                    date: _formatDate(item['date']!),
-                    cropName: item['crop']!,
-                    onTap: () {
-                      // Navigate to treatment screen with this diagnosis
-                      Navigator.pushNamed(
-                        context,
-                        '/treatment',
-                        arguments: item,
-                      );
-                    },
+
+                  return Dismissible(
+                    key: ValueKey(item.id), // Flaw #6: Use unique ID
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (_) => _confirmDelete(index),
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      child: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    child: HistoryItemCard(
+                      imagePath: item.imagePath,
+                      date: _formatDate(item.date),
+                      cropName: '${item.cropName} - ${item.diseaseName}',
+                      onTap: () {
+                        // Flaw #6: Pass isFromHistory flag
+                        Navigator.pushNamed(
+                          context,
+                          '/treatment',
+                          arguments: {'result': item, 'isFromHistory': true},
+                        );
+                      },
+                    ),
                   );
                 },
               ),
+      ),
+    );
+  }
+
+  /// CONFIRM DELETE DIALOG
+  Future<bool?> _confirmDelete(int index) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Scan?"),
+        content: const Text(
+          "Are you sure you want to remove this diagnosis from history?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => HistoryService.removeResult(index));
+              Navigator.pop(context, true);
+            },
+            child: const Text("Delete"),
+          ),
+        ],
       ),
     );
   }
@@ -72,11 +96,7 @@ class HistoryScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
-            Icon(
-              Icons.history,
-              size: 100,
-              color: AppTheme.lightGreen,
-            ),
+            Icon(Icons.history, size: 100, color: AppTheme.lightGreen),
             SizedBox(height: AppTheme.spacingLarge),
             Text(
               'No scan history yet',
@@ -89,7 +109,7 @@ class HistoryScreen extends StatelessWidget {
             ),
             SizedBox(height: AppTheme.spacingMedium),
             Text(
-              'Your past crop diagnoses will appear here',
+              'No scans yet — your future diagnoses will appear here',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -103,17 +123,8 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  String _formatDate(String dateStr) {
-    // Simple date formatting (in real app, use intl package)
-    final parts = dateStr.split('-');
-    if (parts.length == 3) {
-      final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      final month = months[int.parse(parts[1]) - 1];
-      return '${parts[2]} $month ${parts[0]}';
-    }
-    return dateStr;
+  // Flaw #17: Use intl package for consistent date formatting
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
   }
 }
