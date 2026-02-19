@@ -58,6 +58,7 @@ export interface SuccessResult {
   type: "success";
   disease: string;
   confidence: number;
+  /** "Early Stage" | "Medium" | "Severe" */
   severity: string;
   cropType: string;
   fullLabel: string;

@@ -18,6 +18,9 @@ class ScanResult {
   /// Quality warnings from backend image analysis
   final String? qualityWarnings;
 
+  /// Base64-encoded PNG of the Grad-CAM heatmap overlay (optional)
+  final String? heatmapPng;
+
   /// User rating (1-5), null if not rated yet
   int? rating;
 
@@ -33,6 +36,7 @@ class ScanResult {
     this.severity,
     this.fullLabel,
     this.qualityWarnings,
+    this.heatmapPng,
   }) : id = id ?? UniqueKey().toString(),
        date = date ?? DateTime.now();
 
@@ -48,6 +52,7 @@ class ScanResult {
       severity: json['severity'],
       fullLabel: json['fullLabel'],
       qualityWarnings: json['hadQualityWarnings'] == true ? 'Quality issue detected' : null,
+      heatmapPng: json['heatmapPng'],
     );
   }
 }

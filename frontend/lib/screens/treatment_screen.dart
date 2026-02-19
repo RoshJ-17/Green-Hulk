@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:share_plus/share_plus.dart';
@@ -43,6 +46,11 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   Map<String, dynamic>? _selectedOrganicTreatment;
   Map<String, dynamic>? _selectedChemicalTreatment;
 
+  // Heatmap
+  bool           _showHeatmap   = false;
+  Uint8List?     _heatmapBytes;
+  bool           _heatmapLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +69,42 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     });
 
     _fetchTreatments();
+    _decodeHeatmap();
+  }
+
+  // ── Heatmap ──────────────────────────────────────────────────────────────
+
+  void _decodeHeatmap() {
+    if (result.heatmapPng == null) return;
+    try {
+      _heatmapBytes = base64Decode(result.heatmapPng!);
+    } catch (_) {}
+  }
+
+  Future<void> _fetchHeatmapIfNeeded() async {
+    if (_heatmapBytes != null || result.heatmapPng != null) {
+      setState(() => _showHeatmap = !_showHeatmap);
+      return;
+    }
+
+    // Heatmap wasn't requested at scan time → fetch it now
+    setState(() => _heatmapLoading = true);
+    try {
+      final refreshed = await AIModelService.analyzeImage(
+        imagePath:   result.imagePath,
+        cropName:    result.cropName,
+        withHeatmap: true,
+      );
+      if (refreshed.heatmapPng != null && mounted) {
+        _heatmapBytes = base64Decode(refreshed.heatmapPng!);
+        setState(() {
+          _showHeatmap   = true;
+          _heatmapLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _heatmapLoading = false);
+    }
   }
 
   @override
@@ -194,10 +238,11 @@ class _TreatmentScreenState extends State<TreatmentScreen>
         '''
 🌿 CROP CARE TREATMENT PLAN
 ================================
-Crop: ${result.cropName}
+Crop:      ${result.cropName}
 Condition: ${AIModelService.getDiseaseDisplayName(result)}
-Confidence: ${AIModelService.getConfidenceDisplay(result.confidence)}
-Method: ${treatment['name']}
+Severity:  ${result.severity ?? 'Unknown'}
+Confidence:${AIModelService.getConfidenceDisplay(result.confidence)}
+Method:    ${treatment['name']}
 
 📋 TREATMENT STEPS:
 ''';
@@ -283,20 +328,32 @@ Method: ${treatment['name']}
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               _buildBadge(
                 AIModelService.getConfidenceDisplay(result.confidence),
                 _getConfidenceColor(result.confidence),
               ),
-              if (result.severity != null) ...[
-                const SizedBox(width: 8),
+              if (result.severity != null)
                 _buildBadge(
                   result.severity!,
                   _getSeverityColor(result.severity!),
                 ),
-              ],
+              // Heatmap toggle badge
+              GestureDetector(
+                onTap: _fetchHeatmapIfNeeded,
+                child: _buildBadge(
+                  _heatmapLoading
+                      ? 'Loading heatmap…'
+                      : _showHeatmap
+                          ? '🌡 Hide Heatmap'
+                          : '🌡 Show Heatmap',
+                  Colors.deepOrange,
+                ),
+              ),
             ],
           ),
           if (_diseaseData?['description'] != null)
@@ -320,6 +377,38 @@ Method: ${treatment['name']}
                 style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ),
+
+          // ── Grad-CAM heatmap panel ──────────────────────────────────────
+          if (_showHeatmap && _heatmapBytes != null) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  Image.memory(_heatmapBytes!,
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      color: Colors.black54,
+                      child: const Text(
+                        'Grad-CAM — Red areas influenced the diagnosis most',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.white, fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

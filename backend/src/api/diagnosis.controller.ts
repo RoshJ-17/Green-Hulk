@@ -62,7 +62,7 @@ export class DiagnosisController {
     }
 
     // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/jfif", "image/pjpeg", "application/octet-stream"];
     if (!allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException("Invalid file type. Allowed: JPEG, PNG");
     }

@@ -21,7 +21,10 @@ export class DiagnosisResponseDto {
   @ApiProperty({ description: "Confidence score 0-1", required: false })
   confidence?: number;
 
-  @ApiProperty({ description: "Severity level", required: false })
+  @ApiProperty({
+    description: "Severity label: 'Early Stage' | 'Medium' | 'Severe'",
+    required: false,
+  })
   severity?: string;
 
   @ApiProperty({ description: "Crop type", required: false })
