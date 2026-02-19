@@ -178,18 +178,18 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      // Email is optional, but validate format if provided
-                      if (value != null && value.isNotEmpty) {
-                        if (!RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(value)) {
-                          return 'Please enter a valid email address';
-                        }
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid email address';
                       }
                       return null;
                     },
                     decoration: InputDecoration(
-                      labelText: 'Email (Optional)',
+                      labelText: 'Email',
                       prefixIcon: const Icon(
                         Icons.email_outlined,
                         color: AppTheme.accentGreen,

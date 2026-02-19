@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 //import 'dart:async';
 import '../theme/app_theme.dart';
+import '../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,18 +12,27 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-void initState() {
-  super.initState();
-  _navigate();
-}
+  void initState() {
+    super.initState();
+    _navigate();
+  }
 
-Future<void> _navigate() async {
-  await Future.delayed(const Duration(seconds: 2));
+  Future<void> _navigate() async {
+    await Future.delayed(const Duration(seconds: 2));
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  Navigator.pushReplacementNamed(context, '/login');
-}
+    // Check if user is already logged in
+    final isLoggedIn = await AuthService.isLoggedIn();
+    
+    if (isLoggedIn) {
+      // User is logged in, go to main app
+      Navigator.pushReplacementNamed(context, '/language');
+    } else {
+      // User is not logged in, go to login
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
 
 
 
