@@ -33,3 +33,9 @@ __pycache__/
 env/
 venv/
 .venv/
+
+# Additional patterns
+node_modules/
+dist/
+backend/dist/
+.env
