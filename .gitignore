@@ -7,7 +7,6 @@ Thumbs.db
 
 # Backend
 backend/node_modules/
-backend/dist/
 backend/build/
 backend/.env
 backend/deps.txt
