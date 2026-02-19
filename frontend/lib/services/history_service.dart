@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // FIX: needed for debugPrint
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/scan_result.dart';
@@ -33,7 +34,10 @@ class HistoryService {
         _history.addAll(data.map((json) => ScanResult.fromJson(json)).toList());
       }
     } catch (e) {
-      print('Error fetching history: $e');
+      // FIX (avoid_print): replaced print() with debugPrint() — print() must
+      // not be used in production code as it always outputs to the console.
+      // debugPrint() is stripped in release builds automatically.
+      debugPrint('Error fetching history: $e');
       // Keep existing history on error or handle as needed
     }
   }
