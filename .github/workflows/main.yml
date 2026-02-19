@@ -21,8 +21,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          # Using a glob pattern to ensure it finds the lock file regardless of direct path issues
-          cache-dependency-path: 'backend/package-lock.json'
+          cache-dependency-path: './backend/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -36,17 +35,35 @@ jobs:
       - name: Run Tests
         run: npm run test
 
+  # ── PYTHON SERVICE CHECK ──
+  python-service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flask flask-cors tensorflow numpy
+      - name: Verify TFLite Service script
+        run: python -c "import flask; import tensorflow; print('Python dependencies verified')"
+
   # ── FRONTEND JOB ──
   frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
 
-      # 🟢 NEEDED: Java 17 is required for reaching the APK build stage
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -60,19 +77,14 @@ jobs:
           flutter-version: "3.41.1" 
           channel: stable
 
-      # 🔴 FORCE DELETE OLD CACHE (requested)
       - name: Clear pub cache
         run: |
           flutter clean
           rm -rf ~/.pub-cache
           rm -f pubspec.lock
 
-      # 🔴 FORCE NEW DEP RESOLUTION
       - name: Install dependencies fresh
         run: flutter pub get
-
-      - name: Verify versions
-        run: flutter pub deps | grep vibration || true
 
       - name: Build APK
         run: flutter build apk --release
