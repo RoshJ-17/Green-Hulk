@@ -19,6 +19,11 @@
         "noFallthroughCasesInSwitch": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
+        "types": [
+            "jest",
+            "node",
+            "multer"
+        ],
         "paths": {
             "@ml/*": [
                 "src/ml/*"
@@ -50,7 +55,8 @@
         }
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "integration/**/*"
     ],
     "exclude": [
         "node_modules",
