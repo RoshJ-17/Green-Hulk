@@ -170,7 +170,10 @@ class VoiceSearchService {
   /// Trigger vibration pulse
   static Future<void> _triggerVibration() async {
     try {
-      final hasVibrator = await Vibration.hasVibrator() ?? false;
+      // FIX (dead_code + dead_null_aware_expression): Vibration.hasVibrator()
+      // returns non-nullable `bool` in vibration ^2.0.0, so `?? false` was
+      // unreachable dead code and the null-aware operator was unnecessary.
+      final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator) {
         // Short vibration pulse (200ms)
         await Vibration.vibrate(duration: 200);
