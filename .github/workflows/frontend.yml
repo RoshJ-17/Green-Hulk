@@ -1,0 +1,62 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.1"
+          channel: stable
+          cache: true
+
+      # 🔴 FORCE DELETE OLD CACHE (requested by user)
+      - name: Clear pub cache
+        run: |
+          flutter clean
+          rm -rf ~/.pub-cache
+          rm -f pubspec.lock
+
+      # 🔴 FORCE NEW DEP RESOLUTION
+      - name: Install dependencies fresh
+        run: flutter pub get
+
+      - name: Verify versions
+        run: |
+          flutter pub deps | grep vibration || true
+          flutter build apk --version || true
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
