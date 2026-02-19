@@ -1,20 +1,44 @@
-name: Frontend CI
+name: Main CI/CD
 
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend.yml'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'frontend/**'
 
 jobs:
+  # ── BACKEND JOB ──
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # Using a glob pattern to ensure it finds the lock file regardless of direct path issues
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run Tests
+        run: npm run test
+
+  # ── FRONTEND JOB ──
   frontend:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: frontend
@@ -22,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 🟢 NEEDED: Java 17 is required for reaching the APK build stage
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -32,11 +57,10 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.1"
+          flutter-version: "3.41.1" 
           channel: stable
-          cache: true
 
-      # 🔴 FORCE DELETE OLD CACHE (requested by user)
+      # 🔴 FORCE DELETE OLD CACHE (requested)
       - name: Clear pub cache
         run: |
           flutter clean
@@ -48,9 +72,7 @@ jobs:
         run: flutter pub get
 
       - name: Verify versions
-        run: |
-          flutter pub deps | grep vibration || true
-          flutter build apk --version || true
+        run: flutter pub deps | grep vibration || true
 
       - name: Build APK
         run: flutter build apk --release
