@@ -1,14 +1,19 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import '../services/history_service.dart';
-import '../services/pending_upload_service.dart';
+
+import '../models/scan_result.dart';
+import '../screens/treatment_screen.dart';
 import '../services/ai_model_service.dart';
 import '../services/audio_service.dart';
-import '../services/connectivity_service.dart';
 import '../services/camera_service.dart';
-import '../models/scan_result.dart';
+import '../services/connectivity_service.dart';
+import '../services/history_service.dart';
+import '../services/pending_upload_service.dart';
 
 class ScanCameraScreen extends StatefulWidget {
   final String cropName;
@@ -21,17 +26,28 @@ class ScanCameraScreen extends StatefulWidget {
 
 class _ScanCameraScreenState extends State<ScanCameraScreen>
     with SingleTickerProviderStateMixin {
+  // ── Camera ──────────────────────────────────────────────────────────────
   CameraController? controller;
-  Future<void>? initializeControllerFuture;
-  late FlutterTts tts;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+  Future<void>? _initFuture;
 
-  bool flashOn = false;
-  bool heatmapOn = false;
-  bool isProcessing = false;
-  bool speaking = false;
-  bool _isOffline = false;
+  // ── UI state ─────────────────────────────────────────────────────────────
+  bool flashOn       = false;
+  bool heatmapOn     = false;
+  bool isProcessing  = false;
+  bool speaking      = false;
+  bool _isOffline    = false;
+
+  /// Live blur warning shown while the user is framing the shot.
+  bool _blurWarning  = false;
+
+  late AnimationController _pulseController;
+  late Animation<double>   _pulseAnimation;
+  late FlutterTts           tts;
+
+  // ── Blur-detection state ──────────────────────────────────────────────
+  /// Minimum Laplacian variance accepted as "sharp enough" (same threshold
+  /// the backend quality-checker uses).
+  static const double _blurThreshold = 100.0;
 
   @override
   void initState() {
@@ -71,22 +87,18 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
 
   Future<void> _initCamera() async {
     if (backCamera == null) await initCameras();
-
     if (backCamera == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("No camera found")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No camera found')));
       return;
     }
-
     controller = CameraController(
       backCamera!,
       ResolutionPreset.medium,
       enableAudio: false,
     );
-    initializeControllerFuture = controller!.initialize();
-
+    _initFuture = controller!.initialize();
     if (!mounted) return;
     setState(() {});
   }
@@ -99,100 +111,245 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     super.dispose();
   }
 
-  // ---------------- CAPTURE ----------------
+  // ── Blur detection ──────────────────────────────────────────────────────
+
+  /// Compute Laplacian variance of a decoded image (same algorithm as backend).
+  double _laplacianVariance(img.Image grey) {
+    final w = grey.width;
+    final h = grey.height;
+    double sum  = 0;
+    double sumSq = 0;
+    int count   = 0;
+
+    for (int y = 1; y < h - 1; y++) {
+      for (int x = 1; x < w - 1; x++) {
+        final c = grey.getPixel(x,   y  ).r.toDouble();
+        final t = grey.getPixel(x,   y-1).r.toDouble();
+        final b = grey.getPixel(x,   y+1).r.toDouble();
+        final l = grey.getPixel(x-1, y  ).r.toDouble();
+        final r = grey.getPixel(x+1, y  ).r.toDouble();
+        final v = (t + b + l + r - 4 * c).abs();
+        sum   += v;
+        sumSq += v * v;
+        count++;
+      }
+    }
+    if (count == 0) return 9999;
+    final mean = sum / count;
+    return sumSq / count - mean * mean; // variance
+  }
+
+  Future<bool> _checkBlur(Uint8List bytes) async {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return false;
+    final thumb = img.copyResize(decoded, width: 200, height: 200);
+    final grey  = img.grayscale(thumb);
+    final score = _laplacianVariance(grey);
+    return score < _blurThreshold;
+  }
+
+  // ── Capture pipeline ────────────────────────────────────────────────────
   Future<void> captureImage() async {
-    if (controller == null || initializeControllerFuture == null) return;
+    if (controller == null || _initFuture == null || isProcessing) return;
 
     setState(() => isProcessing = true);
 
     try {
       await AudioService.playCameraShutter();
-      await initializeControllerFuture;
-      final image = await controller!.takePicture();
+      await _initFuture;
+      final xFile = await controller!.takePicture();
+      final bytes = await xFile.readAsBytes();
 
+      // ── 1. Blur check ──────────────────────────────────────────────────
+      final isBlurry = await _checkBlur(bytes);
+      if (isBlurry) {
+        if (!mounted) return;
+        setState(() => isProcessing = false);
+        _showBlurWarningDialog(onRetry: captureImage);
+        return;
+      }
+
+      // ── 2. Square-crop preview ─────────────────────────────────────────
+      if (!mounted) return;
+      final confirmed = await _showPreviewDialog(bytes);
+      if (!confirmed) {
+        setState(() => isProcessing = false);
+        return; // user tapped "Retake"
+      }
+
+      // ── 3. Offline path ────────────────────────────────────────────────
       if (_isOffline) {
-        // Save to pending queue
         await PendingUploadService.addPendingUpload(
-          imagePath: image.path,
-          cropName: widget.cropName,
-          heatmap: heatmapOn,
+          imagePath: xFile.path,
+          cropName:  widget.cropName,
+          heatmap:   heatmapOn,
         );
-
         final offlineResult = ScanResult(
-          cropName: widget.cropName,
-          diseaseName: "Offline Scan (Queued)",
-          confidence: 0.0,
-          imagePath: image.path,
-          hasDisease: true,
+          cropName:    widget.cropName,
+          diseaseName: 'Offline Scan (Queued)',
+          confidence:  0.0,
+          imagePath:   xFile.path,
+          hasDisease:  true,
         );
-
         if (!mounted) return;
-
-        // Show visual feedback for capture even when offline
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Scan saved! Will process when online."),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Scan saved! Will process when online.'),
+          backgroundColor: Colors.orange,
+        ));
         Navigator.pop(context, offlineResult);
         return;
       }
 
-      // Visual feedback: border glow/flash effect
-      if (mounted) {
-        setState(() => isProcessing = true);
-      }
-
-      final result = await _analyzeImageWithAI(image.path);
+      // ── 4. Analyse ─────────────────────────────────────────────────────
+      setState(() => isProcessing = true);
+      final result = await AIModelService.analyzeImage(
+        imagePath:   xFile.path,
+        cropName:    widget.cropName,
+        withHeatmap: heatmapOn,
+      );
       HistoryService.addResult(result);
 
       if (!mounted) return;
-      Navigator.pop(context, result);
+      // Navigate directly to Treatment screen
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TreatmentScreen(result: result),
+        ),
+      );
     } catch (e) {
       if (mounted) setState(() => isProcessing = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  Future<ScanResult> _analyzeImageWithAI(String imagePath) async {
-    try {
-      if (_isOffline) {
-        return ScanResult(
-          cropName: widget.cropName,
-          diseaseName: "Offline Scan (Will Verify Online)",
-          confidence: 0.50,
-          imagePath: imagePath,
-          hasDisease: true,
-        );
-      }
+  // ── Square-crop preview dialog ──────────────────────────────────────────
 
-      return await AIModelService.analyzeImage(
-        imagePath: imagePath,
-        cropName: widget.cropName,
-      );
-    } catch (e) {
-      debugPrint("Analysis error: $e");
-      // Fallback result for demo/error handling
-      return ScanResult(
-        cropName: widget.cropName,
-        diseaseName: "Analysis Failed",
-        confidence: 0.0,
-        imagePath: imagePath,
-        hasDisease: false,
-      );
-    }
+  /// Crops the image to a centred square, shows a preview and waits for the
+  /// user to confirm ("Use this") or retake.
+  Future<bool> _showPreviewDialog(Uint8List rawBytes) async {
+    final squareBytes = await _squareCrop(rawBytes);
+    if (!mounted) return false;
+
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Preview',
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      squareBytes,
+                      width: 260,
+                      height: 260,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Does the leaf fill the frame clearly?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          icon: const Icon(Icons.replay),
+                          label: const Text('Retake'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Use this'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ) ??
+        false;
   }
 
-  // ---------- VOICE ----------
+  Future<Uint8List> _squareCrop(Uint8List bytes) async {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+    final s    = decoded.width < decoded.height ? decoded.width : decoded.height;
+    final xOff = (decoded.width  - s) ~/ 2;
+    final yOff = (decoded.height - s) ~/ 2;
+    final cropped = img.copyCrop(decoded,
+        x: xOff, y: yOff, width: s, height: s);
+    final thumb = img.copyResize(cropped, width: 300, height: 300);
+    return Uint8List.fromList(img.encodeJpg(thumb, quality: 90));
+  }
+
+  // ── Blur warning dialog ─────────────────────────────────────────────────
+
+  void _showBlurWarningDialog({required VoidCallback onRetry}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.blur_on, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Image Too Blurry'),
+          ],
+        ),
+        content: const Text(
+          'The photo looks out of focus.\n\n'
+          '• Hold the camera still\n'
+          '• Tap the screen to focus on the leaf\n'
+          '• Make sure there is enough light',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              onRetry();
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Try Again'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Voice guide ─────────────────────────────────────────────────────────
   Future<void> toggleVoiceGuide() async {
     if (speaking) {
       await tts.stop();
@@ -210,27 +367,62 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     await controller!.setFlashMode(flashOn ? FlashMode.torch : FlashMode.off);
   }
 
-  // ---------- HEATMAP ----------
+  // ── Heatmap toggle ───────────────────────────────────────────────────────
+
   void toggleHeatmap() {
     setState(() => heatmapOn = !heatmapOn);
     AudioService.playButtonClick();
+    if (heatmapOn) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Grad-CAM heatmap will be generated after scan'),
+        duration: Duration(seconds: 2),
+        backgroundColor: Colors.deepOrange,
+      ));
+    }
   }
 
-  // ---------- GALLERY ----------
+  // ── Gallery ──────────────────────────────────────────────────────────────
+
   Future<void> pickFromGallery() async {
     await AudioService.playButtonClick();
     final file = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (file == null) return;
 
-    setState(() => isProcessing = true);
-    final result = await _analyzeImageWithAI(file.path);
-    HistoryService.addResult(result);
+    final bytes    = await file.readAsBytes();
+    final isBlurry = await _checkBlur(bytes);
+
+    if (isBlurry && mounted) {
+      _showBlurWarningDialog(onRetry: pickFromGallery);
+      return;
+    }
 
     if (!mounted) return;
-    Navigator.pop(context, result);
+    final confirmed = await _showPreviewDialog(bytes);
+    if (!confirmed) return;
+
+    setState(() => isProcessing = true);
+    try {
+      final result = await AIModelService.analyzeImage(
+        imagePath:   file.path,
+        cropName:    widget.cropName,
+        withHeatmap: heatmapOn,
+      );
+      HistoryService.addResult(result);
+      if (!mounted) return;
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => TreatmentScreen(result: result)),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => isProcessing = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
-  // ---------------- UI ----------------
+  // ── UI ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -240,46 +432,75 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          /// CAMERA PREVIEW
+          // Camera preview
           Positioned.fill(
-            child: initializeControllerFuture != null
+            child: _initFuture != null
                 ? FutureBuilder(
-                    future: initializeControllerFuture,
-                    builder: (_, s) => s.connectionState == ConnectionState.done
-                        ? CameraPreview(controller!)
-                        : const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.green,
-                            ),
-                          ),
+                    future: _initFuture,
+                    builder: (_, s) =>
+                        s.connectionState == ConnectionState.done
+                            ? CameraPreview(controller!)
+                            : const Center(
+                                child: CircularProgressIndicator(
+                                    color: Colors.green)),
                   )
                 : const Center(
-                    child: CircularProgressIndicator(color: Colors.green),
-                  ),
+                    child: CircularProgressIndicator(color: Colors.green)),
           ),
 
-          /// SEMI-TRANSPARENT OVERLAY
+          // Dark overlay
           Positioned.fill(
             child: Container(color: Colors.black.withValues(alpha: 0.4)),
           ),
 
-          /// FOCUS BOX (GREEN RECTANGLE)
+          // ── Blur warning banner (live) ─────────────────────────────────
+          if (_blurWarning)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Container(
+                  margin: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.blur_on, color: Colors.white),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Image too blurry — hold steady & tap to focus',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Focus box
           Center(
             child: AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
+                final boxColor = isProcessing
+                    ? Colors.orange.withValues(alpha: _pulseAnimation.value)
+                    : Colors.green.withValues(alpha: _pulseAnimation.value);
                 return Container(
                   width: boxSize,
                   height: boxSize * 1.2,
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: isProcessing
-                          ? Colors.orange.withValues(
-                              alpha: _pulseAnimation.value,
-                            )
-                          : Colors.green.withValues(
-                              alpha: _pulseAnimation.value,
-                            ),
+                      color: boxColor,
                       width: 4,
                     ),
                     borderRadius: BorderRadius.circular(24),
@@ -300,11 +521,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                               CircularProgressIndicator(color: Colors.white),
                               SizedBox(height: 12),
                               Text(
-                                "Analyzing...",
+                                'Analysing…',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -315,7 +535,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             ),
           ),
 
-          /// TOP BAR
+          // Top bar
           SafeArea(
             child: Column(
               children: [
@@ -425,27 +645,27 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             ),
           ),
 
-          /// INSTRUCTION TEXT
+          // Instruction label
           Align(
             alignment: const Alignment(0, -0.7),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                "Center the leaf in the box",
+                'Centre the leaf in the box',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500),
               ),
             ),
           ),
 
-          /// BOTTOM CONTROLS
+          // Bottom controls
           Positioned(
             bottom: 40,
             left: 0,
