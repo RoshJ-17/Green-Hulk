@@ -9,30 +9,64 @@ class VoiceSearchService {
   static final SpeechToText _speech = SpeechToText();
   static bool _isInitialized = false;
   static bool _isListening = false;
+  static String? _lastDetectedKeyword;
 
   /// Crop keywords to recognize (must match the crops list in crop_selection_screen.dart)
   static const List<String> keywords = [
     'corn', 'maize', // Corn aliases
-    'tomato',
-    'apple',
-    'blueberry',
-    'cherry',
-    'grape',
-    'orange',
-    'peach',
-    'pepper', 'bell pepper', // Pepper aliases
-    'potato',
-    'raspberry',
-    'soybean', 'soy', // Soybean aliases
+    'tomato', 'tomatoes',
+    'apple', 'apples',
+    'blueberry', 'blueberries', 'blue berry', 'blue berries',
+    'cherry', 'cherries',
+    'grape', 'grapes',
+    'orange', 'oranges',
+    'peach', 'peaches',
+    'pepper',
+    'peppers',
+    'bell pepper',
+    'bell peppers',
+    'chilli',
+    'chilly',
+    'chili',
+    'capsicum',
+    'potato', 'potatoes',
+    'raspberry', 'raspberries', 'rasp berry', 'rasp berries',
+    'soybean', 'soybeans', 'soy', 'soy bean', 'soy beans',
     'squash',
-    'strawberry',
+    'strawberry', 'strawberries', 'straw berry', 'straw berries',
   ];
 
   /// Map aliases back to canonical crop names (used by crop selection screen)
   static const Map<String, String> aliasMap = {
-    'maize': 'corn',
+    // Plurals & Variations
+    'apples': 'apple',
+    'tomatoes': 'tomato',
+    'blueberries': 'blueberry',
+    'blue berry': 'blueberry',
+    'blue berries': 'blueberry',
+    'cherries': 'cherry',
+    'grapes': 'grape',
+    'oranges': 'orange',
+    'peaches': 'peach',
+    'peppers': 'pepper',
     'bell pepper': 'pepper',
+    'bell peppers': 'pepper',
+    'chilli': 'pepper',
+    'chilly': 'pepper',
+    'chili': 'pepper',
+    'capsicum': 'pepper',
+    'potatoes': 'potato',
+    'raspberries': 'raspberry',
+    'rasp berry': 'raspberry',
+    'rasp berries': 'raspberry',
+    'soybeans': 'soybean',
     'soy': 'soybean',
+    'soy bean': 'soybean',
+    'soy beans': 'soybean',
+    'strawberries': 'strawberry',
+    'straw berry': 'strawberry',
+    'straw berries': 'strawberry',
+    'maize': 'corn',
   };
 
   /// Initialize speech recognition
@@ -77,6 +111,7 @@ class VoiceSearchService {
     if (_isListening) return;
 
     _isListening = true;
+    _lastDetectedKeyword = null;
     onListeningStarted?.call();
 
     await _speech.listen(
@@ -86,7 +121,9 @@ class VoiceSearchService {
 
         // Check for keywords
         final detectedKeyword = _detectKeyword(text);
-        if (detectedKeyword != null) {
+        if (detectedKeyword != null &&
+            detectedKeyword != _lastDetectedKeyword) {
+          _lastDetectedKeyword = detectedKeyword;
           // Vibration pulse when keyword detected
           await _triggerVibration();
           onKeywordDetected(detectedKeyword);
@@ -115,17 +152,19 @@ class VoiceSearchService {
 
   /// Detect if any keyword is in the text, returning the canonical crop name
   static String? _detectKeyword(String text) {
-    // Check longer phrases first (e.g., 'bell pepper' before 'pepper')
-    final sortedKeywords = List<String>.from(keywords)
-      ..sort((a, b) => b.length.compareTo(a.length));
+    String? bestMatch;
+    int maxIndex = -1;
 
-    for (final keyword in sortedKeywords) {
-      if (text.contains(keyword)) {
-        // Return canonical name (resolve aliases)
-        return aliasMap[keyword] ?? keyword;
+    // We want the keyword matched CLOSEST to the end of the text
+    // (the most recently spoken one)
+    for (final keyword in keywords) {
+      final index = text.lastIndexOf(keyword);
+      if (index > maxIndex) {
+        maxIndex = index;
+        bestMatch = aliasMap[keyword] ?? keyword;
       }
     }
-    return null;
+    return bestMatch;
   }
 
   /// Trigger vibration pulse

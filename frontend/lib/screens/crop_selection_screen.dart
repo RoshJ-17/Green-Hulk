@@ -89,6 +89,7 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
           AudioService.playKeywordDetected();
           _selectCropByKeyword(keyword);
 
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Recognized: ${keyword.toUpperCase()}'),
@@ -647,13 +648,14 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                               ? Image.asset(
                                   assetPath,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (ctx, error, stackTrace) => Icon(
-                                    Icons.agriculture,
-                                    size: 40,
-                                    color: isSelected
-                                        ? AppTheme.primaryGreen
-                                        : Colors.grey.shade400,
-                                  ),
+                                  errorBuilder: (ctx, error, stackTrace) =>
+                                      Icon(
+                                        Icons.agriculture,
+                                        size: 40,
+                                        color: isSelected
+                                            ? AppTheme.primaryGreen
+                                            : Colors.grey.shade400,
+                                      ),
                                 )
                               : Icon(
                                   Icons.agriculture,
