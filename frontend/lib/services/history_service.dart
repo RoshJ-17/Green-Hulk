@@ -18,4 +18,10 @@ class HistoryService {
   static void clear() {
     _history.clear();
   }
+
+  /// Placeholder for fetching history from backend/local storage
+  static Future<void> fetchHistory() async {
+    // In a real app, this would fetch from a local database or API
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
 }

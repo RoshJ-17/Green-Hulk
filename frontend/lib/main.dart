@@ -53,7 +53,8 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/language': (context) => LanguageSelectionScreen(onLanguageSelected: _changeLanguage),
+        '/language': (context) =>
+            LanguageSelectionScreen(onLanguageSelected: _changeLanguage),
         '/crops': (context) => const CropSelectionScreen(),
         '/history': (context) => const HistoryScreen(),
       },
@@ -61,10 +62,21 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
       /// receives ScanResult after camera
       onGenerateRoute: (settings) {
         if (settings.name == '/treatment') {
-          final result = settings.arguments as ScanResult;
-          return MaterialPageRoute(
-            builder: (_) => TreatmentScreen(result: result),
-          );
+          // Support both Map arguments (new) and direct ScanResult (legacy)
+          if (settings.arguments is Map) {
+            final args = settings.arguments as Map;
+            final result = args['result'] as ScanResult;
+            final isFromHistory = args['isFromHistory'] as bool? ?? false;
+            return MaterialPageRoute(
+              builder: (_) =>
+                  TreatmentScreen(result: result, isFromHistory: isFromHistory),
+            );
+          } else {
+            final result = settings.arguments as ScanResult;
+            return MaterialPageRoute(
+              builder: (_) => TreatmentScreen(result: result),
+            );
+          }
         }
         return null;
       },

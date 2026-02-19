@@ -8,11 +8,20 @@ import 'scan_camera_screen.dart';
 import '../models/scan_result.dart';
 
 const List<Map<String, String>> crops = [
-  {'name': 'Rice', 'asset': 'icons/rice.png'},
-  {'name': 'Wheat', 'asset': 'icons/wheat.png'},
-  {'name': 'Tomato', 'asset': 'icons/tomato.png'},
-  {'name': 'Maize', 'asset': 'icons/corn.png'},
-  {'name': 'Cotton', 'asset': 'icons/cotton.png'},
+  {'name': 'Corn', 'asset': 'assets/icons/corn.png'},
+  {'name': 'Tomato', 'asset': 'assets/icons/tomato.png'},
+  {'name': 'Apple', 'asset': ''},
+  {'name': 'Blueberry', 'asset': ''},
+  {'name': 'Cherry', 'asset': ''},
+  {'name': 'Grape', 'asset': ''},
+  {'name': 'Orange', 'asset': ''},
+  {'name': 'Peach', 'asset': ''},
+  {'name': 'Pepper', 'asset': ''},
+  {'name': 'Potato', 'asset': ''},
+  {'name': 'Raspberry', 'asset': ''},
+  {'name': 'Soybean', 'asset': ''},
+  {'name': 'Squash', 'asset': ''},
+  {'name': 'Strawberry', 'asset': ''},
 ];
 
 class CropSelectionScreen extends StatefulWidget {
@@ -37,16 +46,16 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
   Future<void> _initServices() async {
     await VoiceSearchService.initialize();
     await ConnectivityService.initialize();
-    
-    // Listen for connectivity changes
+
     ConnectivityService.addListener((isOnline) {
       if (mounted) {
         setState(() => _isOffline = !isOnline);
       }
     });
-    
-    // Check initial connectivity
-    setState(() => _isOffline = ConnectivityService.isOffline);
+
+    if (mounted) {
+      setState(() => _isOffline = ConnectivityService.isOffline);
+    }
   }
 
   @override
@@ -55,14 +64,16 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
     super.dispose();
   }
 
-  /// Start voice search
-  Future<void> _startVoiceSearch() async {
+  /// Toggle voice search ON / OFF
+  Future<void> _toggleVoiceSearch() async {
     if (_isListening) {
+      // STOP listening
       await VoiceSearchService.stopListening();
       setState(() => _isListening = false);
       return;
     }
 
+    // START listening
     setState(() {
       _recognizedText = '';
       _detectedKeyword = null;
@@ -70,16 +81,14 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
     await VoiceSearchService.startListening(
       onResult: (text) {
-        setState(() => _recognizedText = text);
+        if (mounted) setState(() => _recognizedText = text);
       },
       onKeywordDetected: (keyword) {
-        if (keyword != null) {
+        if (keyword != null && mounted) {
           setState(() => _detectedKeyword = keyword);
           AudioService.playKeywordDetected();
-          
-          // Auto-select crop if keyword matches
           _selectCropByKeyword(keyword);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Recognized: ${keyword.toUpperCase()}'),
@@ -89,29 +98,29 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
           );
         }
       },
-      onListeningStarted: () => setState(() => _isListening = true),
-      onListeningStopped: () => setState(() => _isListening = false),
+      onListeningStarted: () {
+        if (mounted) setState(() => _isListening = true);
+      },
+      onListeningStopped: () {
+        if (mounted) setState(() => _isListening = false);
+      },
     );
   }
 
-  /// Auto-select crop based on keyword
+  /// Auto-select crop based on keyword (voice search returns canonical crop names)
   void _selectCropByKeyword(String keyword) {
-    // Match keyword to crop name
     final keywordLower = keyword.toLowerCase();
-    
+
     for (final crop in crops) {
-      if (crop['name']!.toLowerCase() == keywordLower) {
+      final cropName = crop['name']!.toLowerCase();
+      // Match if crop name contains keyword or keyword contains crop name
+      if (cropName == keywordLower ||
+          cropName.contains(keywordLower) ||
+          keywordLower.contains(cropName)) {
         if (!FarmerCropService.isSelected(crop['name']!)) {
           setState(() => FarmerCropService.toggleCrop(crop['name']!));
         }
         break;
-      }
-    }
-    
-    // Special case: "blight" selects Tomato (common disease)
-    if (keywordLower == 'blight') {
-      if (!FarmerCropService.isSelected('Tomato')) {
-        setState(() => FarmerCropService.toggleCrop('Tomato'));
       }
     }
   }
@@ -122,40 +131,21 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select at least one crop")),
+        const SnackBar(
+          content: Text("Please select at least one crop to scan"),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    String? cropToScan;
+    final String cropToScan = selected.first;
 
-    if (selected.length == 1) {
-      cropToScan = selected.first;
-    } else {
-      // Show dialog to pick one
-      cropToScan = await showDialog<String>(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: const Text("Select crop to scan"),
-          children: selected.map((c) => SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, c),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-              child: Text(c, style: const TextStyle(fontSize: 16)),
-            ),
-          )).toList(),
-        ),
-      );
-    }
-
-    if (cropToScan == null) return;
     if (!mounted) return;
 
     final ScanResult? result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ScanCameraScreen(cropName: cropToScan!),
-      ),
+      MaterialPageRoute(builder: (_) => ScanCameraScreen(cropName: cropToScan)),
     );
 
     if (!mounted) return;
@@ -164,162 +154,401 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
       Navigator.pushNamed(
         context,
         '/treatment',
-        arguments: result,
+        arguments: {'result': result, 'isFromHistory': false},
       );
     }
+  }
+
+  // Profile/Logout Dialog
+  void _showProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Profile"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircleAvatar(
+              radius: 30,
+              backgroundColor: AppTheme.primaryGreen,
+              child: Icon(Icons.person, size: 40, color: Colors.white),
+            ),
+            const SizedBox(height: 16),
+            const Text("User Profile"),
+            const SizedBox(height: 8),
+            Text(
+              "Logged in",
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Clear All Selection
+  void _clearAllSelections() {
+    if (FarmerCropService.selectedCrops.isEmpty) return;
+
+    setState(() {
+      for (var cropName in List.of(FarmerCropService.selectedCrops)) {
+        FarmerCropService.toggleCrop(cropName);
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("All selections cleared"),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Crop'),
-        actions: [
-          // Voice search button
-          IconButton(
-            icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-            tooltip: 'Voice Search',
-            onPressed: _startVoiceSearch,
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Navigator.pushNamed(context, '/history'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.pushNamed(context, '/login'),
-          ),
-        ],
-      ),
-
+      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-
-              /// Offline badge
-              if (_isOffline)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange),
+        child: Column(
+          children: [
+            // ── HERO SECTION ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryGreen, AppTheme.accentGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                ],
+              ),
+              child: Column(
+                children: [
+                  // ── TOP ROW: Profile | Title | Clear ──
+                  Row(
                     children: [
-                      Icon(Icons.wifi_off, color: Colors.orange, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'No Internet - Local Scan',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
+                      // Profile button
+                      IconButton(
+                        icon: const Icon(
+                          Icons.account_circle,
+                          color: Colors.white,
+                          size: 28,
                         ),
+                        onPressed: _showProfileDialog,
+                        tooltip: 'Profile',
                       ),
+                      const Spacer(),
+                      // Clear All (only when something is selected)
+                      if (FarmerCropService.selectedCrops.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.clear_all,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: _clearAllSelections,
+                          tooltip: 'Clear Selection',
+                        ),
                     ],
                   ),
-                ),
 
-              /// Voice search status
-              if (_isListening || _recognizedText.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: _isListening ? Colors.red.shade50 : Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _isListening ? Colors.red : Colors.green,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 4),
+
+                  // ── Offline badge ──
+                  if (_isOffline)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 12,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            _isListening ? Icons.hearing : Icons.check_circle,
-                            color: _isListening ? Colors.red : Colors.green,
-                          ),
-                          const SizedBox(width: 8),
+                          Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                          SizedBox(width: 6),
                           Text(
-                            _isListening ? 'Listening...' : 'Voice Search Complete',
+                            'Offline Mode',
                             style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: _isListening ? Colors.red : Colors.green,
                             ),
                           ),
                         ],
                       ),
-                      if (_recognizedText.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          '"$_recognizedText"',
-                          style: const TextStyle(fontStyle: FontStyle.italic),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                      if (_detectedKeyword != null) ...[
-                        const SizedBox(height: 4),
-                        Chip(
-                          avatar: const Icon(Icons.check, size: 16),
-                          label: Text('Keyword: ${_detectedKeyword!.toUpperCase()}'),
-                          backgroundColor: AppTheme.lightGreen,
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        'Say: "Tomato", "Rice", or "Blight"',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
+                    ),
+
+                  // ── Title ──
+                  const Text(
+                    'Select Your Crops',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Choose the crops you want to scan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // ── MIC TOGGLE BUTTON (always visible) ──
+                  GestureDetector(
+                    onTap: _toggleVoiceSearch,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _isListening
+                            ? Colors.red.withValues(alpha: 0.9)
+                            : Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: _isListening
+                              ? Colors.red
+                              : Colors.white.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isListening ? Icons.mic_off : Icons.mic,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isListening ? 'Stop Listening' : 'Voice Search',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Voice search feedback ──
+                  if (_isListening || _recognizedText.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: _isListening
+                                      ? Colors.red.withValues(alpha: 0.1)
+                                      : Colors.green.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _isListening
+                                      ? Icons.hearing
+                                      : Icons.check_circle,
+                                  color: _isListening
+                                      ? Colors.red
+                                      : Colors.green,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                _isListening
+                                    ? 'Listening...'
+                                    : 'Voice Detected',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: _isListening
+                                      ? Colors.red
+                                      : Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_recognizedText.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              '"$_recognizedText"',
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                          if (_detectedKeyword != null) ...[
+                            const SizedBox(height: 4),
+                            Chip(
+                              avatar: const Icon(Icons.check, size: 16),
+                              label: Text(
+                                'Keyword: ${_detectedKeyword!.toUpperCase()}',
+                              ),
+                              backgroundColor: AppTheme.lightGreen,
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'Try: "Tomato", "Corn", "Potato"',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // ── Selected crops indicator ──
+            if (FarmerCropService.selectedCrops.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                'Select all crops you grow',
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightGreen.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.lightGreen),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryGreen,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${FarmerCropService.selectedCrops.length} crop(s) selected',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 20),
-
-              /// GRID
-              Expanded(
+            // ── CROP GRID ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: GridView.builder(
                   itemCount: crops.length,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.95,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.85,
                   ),
                   itemBuilder: (context, index) {
                     final crop = crops[index];
-                    return _buildCropCard(
-                      crop['name']!,
-                      crop['asset']!,
-                    );
+                    return _buildCropCard(crop['name']!, crop['asset']!);
                   },
                 ),
               ),
+            ),
 
-              const SizedBox(height: 10),
-
-              /// SCAN BUTTON
-              ElevatedButton(
+            // ── SCAN BUTTON ──
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryGreen,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  minimumSize: const Size(double.infinity, 50),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  minimumSize: const Size(double.infinity, 60),
+                  elevation: 5,
+                  shadowColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: () {
                   AudioService.playButtonClick();
@@ -328,18 +557,32 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.camera_alt, color: Colors.white),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Text(
-                      _isOffline ? "Scan (Offline Mode)" : "Scan Selected Crop",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      _isOffline ? "Scan Offline" : "Start Scanning",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
               ),
-
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -347,51 +590,116 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
   /// Crop Card
   Widget _buildCropCard(String cropName, String assetPath) {
-
     final isSelected = FarmerCropService.isSelected(cropName);
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isSelected ? Colors.green : Colors.transparent,
-          width: 3,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? AppTheme.primaryGreen : Colors.grey.shade200,
+          width: isSelected ? 3 : 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isSelected
+                ? AppTheme.primaryGreen.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: isSelected ? 12 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          setState(() => FarmerCropService.toggleCrop(cropName));
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            AudioService.playButtonClick();
+            setState(() => FarmerCropService.toggleCrop(cropName));
+          },
+          child: Stack(
             children: [
-
-              Expanded(
-                child: Image.asset(
-                  assetPath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) =>
-                      const Icon(Icons.agriculture, size: 70, color: Colors.green),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.lightGreen.withValues(alpha: 0.2)
+                              : Colors.grey.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: assetPath.isNotEmpty
+                            ? Image.asset(
+                                assetPath,
+                                fit: BoxFit.contain,
+                                errorBuilder: (ctx, error, stackTrace) => Icon(
+                                  Icons.agriculture,
+                                  size: 50,
+                                  color: isSelected
+                                      ? AppTheme.primaryGreen
+                                      : Colors.grey.shade400,
+                                ),
+                              )
+                            : Icon(
+                                Icons.agriculture,
+                                size: 50,
+                                color: isSelected
+                                    ? AppTheme.primaryGreen
+                                    : Colors.grey.shade400,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      cropName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected
+                            ? AppTheme.primaryGreen
+                            : Colors.grey.shade700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                cropName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-
+              // Selection indicator
               if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.green),
-
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: AnimatedScale(
+                    scale: 1.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
