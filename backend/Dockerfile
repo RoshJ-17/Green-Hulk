@@ -5,16 +5,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies
-# NOTE: 'npm ci' requires a package-lock.json — using 'npm install --omit=dev' instead.
-# Long-term fix: commit a package-lock.json to your repo and switch back to 'npm ci'.
-RUN npm install --omit=dev
+# Install ALL dependencies (including dev) so @nestjs/cli is available for the build step
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build application
+# Build the NestJS application (requires nest CLI from devDependencies)
 RUN npm run build
+
+# Remove dev dependencies — keeps the final image lean
+RUN npm prune --omit=dev
 
 # Create directories for assets and data
 RUN mkdir -p assets/model data
