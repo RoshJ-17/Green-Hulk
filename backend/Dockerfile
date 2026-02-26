@@ -5,8 +5,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install production dependencies
+# NOTE: 'npm ci' requires a package-lock.json — using 'npm install --omit=dev' instead.
+# Long-term fix: commit a package-lock.json to your repo and switch back to 'npm ci'.
+RUN npm install --omit=dev
 
 # Copy source code
 COPY . .
