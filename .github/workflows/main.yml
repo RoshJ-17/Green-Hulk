@@ -39,13 +39,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          # FIX (Image 3): Removed cache: 'npm' + cache-dependency-path because
-          # the project has no package-lock.json, which caused:
-          # "Some specified paths were not resolved, unable to cache dependencies"
 
       - name: Install Dependencies
-        # FIX (Image 1 & 3): Using 'npm install' instead of 'npm ci' because
-        # 'npm ci' requires an existing package-lock.json to function.
         run: npm install
 
       - name: Run ESLint
@@ -71,7 +66,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          # FIX: No cache because no package-lock.json exists
 
       - name: Install Dependencies
         run: npm install
@@ -138,16 +132,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          # FIX (Image 2): Removed cache: 'pip' entirely because the project has
-          # no requirements.txt or pyproject.toml, which caused:
-          # "No file matched to [**/requirements.txt or **/pyproject.toml]"
 
       - name: Install Python Dependencies
-        # FIX (Image 2): Installing all packages inline instead of from a requirements file
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov flask flask-cors numpy
-          # Try tflite-runtime first (lighter); fall back to full tensorflow
           pip install tflite-runtime || pip install tensorflow-cpu
 
       - name: Run Python Tests
@@ -170,7 +159,6 @@ jobs:
   security-scan:
     name: 🔒 Security — Dependency Audit
     runs-on: ubuntu-latest
-    # FIX: Added write permissions needed for CodeQL SARIF upload on non-fork PRs
     permissions:
       contents: read
       security-events: write
@@ -183,11 +171,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          # FIX: No cache — no package-lock.json
 
       - name: Audit Backend Dependencies
         working-directory: backend
-        # FIX (Image 1): Using 'npm install' instead of 'npm ci' to avoid EUSAGE error
         run: |
           npm install
           npm audit --audit-level=high || echo "::warning::High severity vulnerabilities found"
@@ -204,14 +190,10 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security Tab
-        # FIX (Image 1): Upgraded from deprecated codeql-action/upload-sarif@v3 to @v4
-        # FIX (Image 1): 'if: always()' ensures upload runs even when Trivy finds issues
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
-        # Note: On fork PRs this step warns because forks lack security-events:write —
-        # this is a GitHub platform limitation and does not affect main/develop branches.
         continue-on-error: true
 
   # ──────────────────────────────────────────────
@@ -235,6 +217,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Lowercase image name
         run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
@@ -270,7 +253,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64        # ← removed arm64 to speed up build
 
       - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
@@ -438,7 +421,7 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment:
       name: staging
-      url: https://staging.green-hulk.app
+      url: https://green-hulk-production.up.railway.app   # ← Railway URL
 
     steps:
       - name: Checkout Code
@@ -453,15 +436,10 @@ jobs:
       - name: Deploy Backend to Staging
         run: |
           echo "Deploying Docker image to staging..."
-          # ssh ${{ secrets.STAGING_HOST }} "
-          #   docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop &&
-          #   docker-compose -f /opt/green-hulk/docker-compose.yml up -d
-          # "
 
       - name: Deploy Web Frontend to Staging
         run: |
           echo "Deploying Flutter Web to staging..."
-          # aws s3 sync ./web-build s3://${{ secrets.STAGING_S3_BUCKET }} --delete
 
       - name: Notify Staging Deployment
         run: echo "✅ Staging deployment complete for commit ${{ github.sha }}"
@@ -476,7 +454,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://green-hulk.app
+      url: https://green-hulk-production.up.railway.app   # ← Railway URL
 
     steps:
       - name: Checkout Code
@@ -497,15 +475,10 @@ jobs:
       - name: Deploy Backend to Production
         run: |
           echo "Deploying Docker image to production..."
-          # ssh ${{ secrets.PROD_HOST }} "
-          #   docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest &&
-          #   docker-compose -f /opt/green-hulk/docker-compose.yml up -d
-          # "
 
       - name: Deploy Web Frontend to Production
         run: |
           echo "Deploying Flutter Web to production..."
-          # aws s3 sync ./web-build s3://${{ secrets.PROD_S3_BUCKET }} --delete
 
       - name: Notify Production Deployment
         run: echo "✅ Production deployment complete for ${{ github.ref_name }}"
