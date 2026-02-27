@@ -5,16 +5,19 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including dev) so @nestjs/cli is available for the build step
+# Install ALL dependencies (including dev) so @nestjs/cli is available for build
 RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the NestJS application (requires nest CLI from devDependencies)
+# Build the NestJS application
 RUN npm run build
 
-# Remove dev dependencies — keeps the final image lean
+# Verify dist/main.js was created — fails early if build didn't work
+RUN test -f dist/main.js || (echo "ERROR: dist/main.js not found! Build failed." && exit 1)
+
+# Remove dev dependencies after build
 RUN npm prune --omit=dev
 
 # Create directories for assets and data
