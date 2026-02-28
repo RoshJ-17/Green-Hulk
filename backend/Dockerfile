@@ -18,7 +18,7 @@ COPY src ./src
 # Build TypeScript → JavaScript
 RUN ./node_modules/.bin/nest build
 
-# Confirm dist/main.js exists
+# Confirm dist/main.js exists — fail loudly if not
 RUN test -f dist/main.js && echo "BUILD OK: dist/main.js exists" || (echo "BUILD FAILED: dist/main.js missing" && ls -la dist/ && exit 1)
 
 # ── Stage 2: Production ─────────────────────────
@@ -31,13 +31,9 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy compiled backend from builder stage
+# Copy compiled output from builder stage
 COPY --from=builder /app/dist ./dist
 COPY tsconfig*.json ./
-
-# Copy Flutter web build into /app/web (served as static files by NestJS)
-# This folder is passed in from CI via --build-arg or COPY
-COPY web ./web
 
 RUN mkdir -p assets/model data
 
