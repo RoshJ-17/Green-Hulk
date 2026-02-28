@@ -1,36 +1,42 @@
-FROM node:18-alpine
+# ── Stage 1: Build ──────────────────────────────
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Install build tools for native modules (sqlite3, sharp, bcrypt)
 RUN apk add --no-cache python3 make g++
 
-# Copy package files and configs
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-# Write nest-cli.json with deleteOutDir set to false
-RUN echo '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
+# Write nest-cli.json with deleteOutDir FALSE
+RUN printf '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
 
-# Install ALL dependencies including dev
 RUN npm install
 
-# Copy source code
-COPY . .
+COPY src ./src
+COPY integration ./integration
 
-# Overwrite nest-cli.json again after COPY (in case it got overwritten)
-RUN echo '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
+# Build TypeScript → JavaScript
+RUN ./node_modules/.bin/nest build
 
-# Clear old dist and build fresh
-RUN rm -rf dist tsconfig.tsbuildinfo && ./node_modules/.bin/nest build
+# Confirm dist/main.js exists — fail loudly if not
+RUN test -f dist/main.js && echo "BUILD OK: dist/main.js exists" || (echo "BUILD FAILED: dist/main.js missing" && ls -la dist/ && exit 1)
 
-# Show what was built
-RUN find dist -name "*.js" | head -10
+# ── Stage 2: Production ─────────────────────────
+FROM node:18-alpine AS production
 
-# Remove dev dependencies after build
-RUN npm prune --omit=dev
+WORKDIR /app
 
-# Create directories for assets and data
+RUN apk add --no-cache python3 make g++
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+# Copy compiled output from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/tsconfig-paths ./node_modules/tsconfig-paths
+COPY tsconfig*.json ./
+
 RUN mkdir -p assets/model data
 
 EXPOSE 3000
