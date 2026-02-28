@@ -5,7 +5,7 @@ WORKDIR /app
 # Install build tools for native modules (sqlite3, sharp, bcrypt)
 RUN apk add --no-cache python3 make g++
 
-# Copy everything needed
+# Copy package files and configs
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
@@ -16,14 +16,22 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Remove any stale build cache and rebuild
+# Temporarily disable deleteOutDir, build, then restore
+RUN node -e "
+  const fs = require('fs');
+  const cfg = JSON.parse(fs.readFileSync('nest-cli.json'));
+  cfg.compilerOptions.deleteOutDir = false;
+  fs.writeFileSync('nest-cli.json', JSON.stringify(cfg, null, 2));
+"
+
+# Clear old dist and build fresh
 RUN rm -rf dist tsconfig.tsbuildinfo
 
-# Use nest CLI directly with full path
-RUN ./node_modules/.bin/nest build --skip-type-check
+# Build NestJS app
+RUN ./node_modules/.bin/nest build
 
-# Show what was built for debugging
-RUN ls -la dist/ && echo "=== dist contents ===" && find dist -name "*.js" | head -10
+# Show what was built
+RUN echo "=== dist contents ===" && find dist -name "*.js" | head -20
 
 # Remove dev dependencies after build
 RUN npm prune --omit=dev
