@@ -8,13 +8,12 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-# Write nest-cli.json with deleteOutDir FALSE
-RUN printf '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
+# Write nest-cli.json pointing to tsconfig.build.json
+RUN printf '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.build.json"}}' > nest-cli.json
 
 RUN npm install
 
 COPY src ./src
-COPY integration ./integration
 
 # Build TypeScript → JavaScript
 RUN ./node_modules/.bin/nest build
