@@ -2,13 +2,15 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install build tools for native module (sqlite3, sharp, bcrypt)
+# Install build tools for native modules (sqlite3, sharp, bcrypt)
 RUN apk add --no-cache python3 make g++
 
 # Copy package files and configs
 COPY package*.json ./
 COPY tsconfig*.json ./
-COPY nest-cli.json ./
+
+# Write nest-cli.json with deleteOutDir set to false
+RUN echo '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
 
 # Install ALL dependencies including dev
 RUN npm install
@@ -16,22 +18,14 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Temporarily disable deleteOutDir, build, then restore
-RUN node -e "
-  const fs = require('fs');
-  const cfg = JSON.parse(fs.readFileSync('nest-cli.json'));
-  cfg.compilerOptions.deleteOutDir = false;
-  fs.writeFileSync('nest-cli.json', JSON.stringify(cfg, null, 2));
-"
+# Overwrite nest-cli.json again after COPY (in case it got overwritten)
+RUN echo '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.json"}}' > nest-cli.json
 
 # Clear old dist and build fresh
-RUN rm -rf dist tsconfig.tsbuildinfo
-
-# Build NestJS app
-RUN ./node_modules/.bin/nest build
+RUN rm -rf dist tsconfig.tsbuildinfo && ./node_modules/.bin/nest build
 
 # Show what was built
-RUN echo "=== dist contents ===" && find dist -name "*.js" | head -20
+RUN find dist -name "*.js" | head -10
 
 # Remove dev dependencies after build
 RUN npm prune --omit=dev
