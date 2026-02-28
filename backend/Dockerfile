@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install build tools needed for native modules (sqlite3, sharp, bcrypt)
+# Install build tools needed for native module (sqlite3, sharp, bcrypt)
 RUN apk add --no-cache python3 make g++
 
 # Copy package files
