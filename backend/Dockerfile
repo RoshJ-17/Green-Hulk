@@ -29,11 +29,13 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 COPY package*.json ./
+
+# tsconfig-paths must be a regular dependency (not devDependency) in package.json
+# so that npm install --omit=dev installs it along with json5 and other sub-deps
 RUN npm install --omit=dev
 
 # Copy compiled output from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/tsconfig-paths ./node_modules/tsconfig-paths
 COPY tsconfig*.json ./
 
 RUN mkdir -p assets/model data
