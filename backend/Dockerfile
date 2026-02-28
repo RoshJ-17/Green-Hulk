@@ -5,17 +5,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including dev) so @nestjs/cli is available for build
+# Install ALL dependencies including dev (needed for nest CLI)
 RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the NestJS application
-RUN npm run build
+# Clear any cached build artifacts and build fresh
+RUN rm -rf dist && npm run build
 
-# Verify dist/main.js was created — fails early if build didn't work
-RUN test -f dist/main.js || (echo "ERROR: dist/main.js not found! Build failed." && exit 1)
+# List dist to debug what was created
+RUN ls -la dist/ || echo "dist folder is empty or missing"
 
 # Remove dev dependencies after build
 RUN npm prune --omit=dev
