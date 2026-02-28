@@ -37,6 +37,17 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api/docs", app, document);
 
+  // Root health check
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get("/", (_req: unknown, res: { json: (data: object) => void }) => {
+    res.json({
+      status: "ok",
+      message: "Green-Hulk Plant Disease Detection API",
+      version: "1.0",
+      docs: "/api/docs",
+    });
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
