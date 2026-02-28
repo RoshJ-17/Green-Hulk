@@ -21,8 +21,6 @@ concurrency:
 
 jobs:
   # ──────────────────────────────────────────────
-  # BACKEND — NestJS CI
-  # ──────────────────────────────────────────────
   backend-lint:
     name: 🔍 Backend — Lint & Format
     runs-on: ubuntu-latest
@@ -38,6 +36,7 @@ jobs:
       - run: npm run lint
       - run: npx prettier --check "src/**/*.ts"
 
+  # ──────────────────────────────────────────────
   backend-test:
     name: 🧪 Backend — Unit & Integration Tests
     runs-on: ubuntu-latest
@@ -61,6 +60,7 @@ jobs:
           flags: backend
           fail_ci_if_error: false
 
+  # ──────────────────────────────────────────────
   backend-build:
     name: 🏗️ Backend — TypeScript Build
     runs-on: ubuntu-latest
@@ -81,8 +81,6 @@ jobs:
           path: backend/dist
           retention-days: 7
 
-  # ──────────────────────────────────────────────
-  # PYTHON TFLITE SERVICE CI
   # ──────────────────────────────────────────────
   python-test:
     name: 🐍 Python — TFLite Service Tests
@@ -110,8 +108,6 @@ jobs:
           flags: python-tflite
           fail_ci_if_error: false
 
-  # ──────────────────────────────────────────────
-  # SECURITY SCANNING
   # ──────────────────────────────────────────────
   security-scan:
     name: 🔒 Security — Dependency Audit
@@ -144,7 +140,56 @@ jobs:
         continue-on-error: true
 
   # ──────────────────────────────────────────────
-  # FLUTTER FRONTEND CI
+  docker-build-push:
+    name: 🐳 Docker — Build & Push Image
+    runs-on: ubuntu-latest
+    needs: [backend-build, python-test]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      - id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+      - uses: aquasecurity/trivy-action@master
+        if: github.event_name != 'pull_request'
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
   # ──────────────────────────────────────────────
   frontend-analyze:
     name: 🎯 Flutter — Analyze & Format
@@ -164,6 +209,7 @@ jobs:
         continue-on-error: true
       - run: flutter analyze --no-fatal-infos
 
+  # ──────────────────────────────────────────────
   frontend-test:
     name: 🧪 Flutter — Unit Tests
     runs-on: ubuntu-latest
@@ -187,6 +233,7 @@ jobs:
           flags: flutter
           fail_ci_if_error: false
 
+  # ──────────────────────────────────────────────
   frontend-build-web:
     name: 🌐 Flutter — Build Web
     runs-on: ubuntu-latest
@@ -202,13 +249,14 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build web --release --dart-define=ENVIRONMENT=production
+      - run: flutter build web --release --dart-define=ENVIRONMENT=production --base-href /Green-Hulk/
       - uses: actions/upload-artifact@v4
         with:
           name: flutter-web-build
           path: frontend/build/web
           retention-days: 7
 
+  # ──────────────────────────────────────────────
   frontend-build-android:
     name: 📱 Flutter — Build Android APK
     runs-on: ubuntu-latest
@@ -242,76 +290,27 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────
-  # DOCKER — BUILD & PUSH (with Flutter web included)
+  # DEPLOY — GITHUB PAGES (main branch only)
   # ──────────────────────────────────────────────
-  docker-build-push:
-    name: 🐳 Docker — Build & Push Image
+  deploy-github-pages:
+    name: 🌍 Deploy — GitHub Pages
     runs-on: ubuntu-latest
-    needs: [backend-build, python-test, frontend-build-web]
+    needs: [frontend-build-web]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
-      contents: read
-      packages: write
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
-
+      contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download Flutter Web Build
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: flutter-web-build
-          path: ./backend/web
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Lowercase image name
-        run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        if: github.event_name != 'pull_request'
+          path: ./web-build
+      - uses: peaceiris/actions-gh-pages@v4
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and Push Docker Image
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
-
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        if: github.event_name != 'pull_request'
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web-build
+          publish_branch: gh-pages
+          force_orphan: true
 
   # ──────────────────────────────────────────────
   # DEPLOY — STAGING (develop branch)
@@ -319,13 +318,17 @@ jobs:
   deploy-staging:
     name: 🚀 Deploy — Staging
     runs-on: ubuntu-latest
-    needs: [docker-build-push, frontend-build-android]
+    needs: [docker-build-push, frontend-build-web, frontend-build-android]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment:
       name: staging
       url: https://green-hulk-production.up.railway.app
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flutter-web-build
+          path: ./web-build
       - run: echo "✅ Staging deployment complete for commit ${{ github.sha }}"
 
   # ──────────────────────────────────────────────
@@ -334,17 +337,25 @@ jobs:
   deploy-production:
     name: 🚀 Deploy — Production
     runs-on: ubuntu-latest
-    needs: [docker-build-push, frontend-build-android]
+    needs: [docker-build-push, frontend-build-web, frontend-build-android]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://green-hulk-production.up.railway.app
+      url: https://roshj-17.github.io/Green-Hulk/
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flutter-web-build
+          path: ./web-build
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: ./android-artifacts
       - run: echo "✅ Production deployment complete for ${{ github.ref_name }}"
 
   # ──────────────────────────────────────────────
-  # RELEASE — Create GitHub Release on tag push
+  # RELEASE
   # ──────────────────────────────────────────────
   create-release:
     name: 📦 Create GitHub Release
