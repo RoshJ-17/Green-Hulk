@@ -1,0 +1,15 @@
+{
+    "modelPath": "./models/model.tflite",
+    "classIndicesPath": "../frontend/assets/model/class_indices.json",
+    "inputShape": [
+        1,
+        224,
+        224,
+        3
+    ],
+    "outputShape": [
+        1,
+        38
+    ],
+    "port": 5000
+}

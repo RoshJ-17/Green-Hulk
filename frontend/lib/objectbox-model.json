@@ -1,0 +1,128 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:721725170867704439",
+      "lastPropertyId": "5:7250243127728938201",
+      "name": "PendingUpload",
+      "properties": [
+        {
+          "id": "1:8994364513241901229",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:984946046464261326",
+          "name": "imagePath",
+          "type": 9
+        },
+        {
+          "id": "3:1335381626003117748",
+          "name": "cropName",
+          "type": 9
+        },
+        {
+          "id": "4:5615187422932218360",
+          "name": "heatmap",
+          "type": 1
+        },
+        {
+          "id": "5:7250243127728938201",
+          "name": "timestamp",
+          "type": 10
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:4370644069687472722",
+      "lastPropertyId": "13:7294975111411018330",
+      "name": "ScanResult",
+      "properties": [
+        {
+          "id": "1:4239879977828614092",
+          "name": "obxId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7322721130038158931",
+          "name": "id",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "1:7849470855727856713"
+        },
+        {
+          "id": "3:747324682361599860",
+          "name": "cropName",
+          "type": 9
+        },
+        {
+          "id": "4:7218036355069126426",
+          "name": "diseaseName",
+          "type": 9
+        },
+        {
+          "id": "5:8003564710369401172",
+          "name": "confidence",
+          "type": 8
+        },
+        {
+          "id": "6:2038113888401866556",
+          "name": "imagePath",
+          "type": 9
+        },
+        {
+          "id": "7:8902727546959829966",
+          "name": "hasDisease",
+          "type": 1
+        },
+        {
+          "id": "8:1523378393539782675",
+          "name": "date",
+          "type": 10
+        },
+        {
+          "id": "9:3641155284511460434",
+          "name": "severity",
+          "type": 9
+        },
+        {
+          "id": "10:1794122975604972449",
+          "name": "fullLabel",
+          "type": 9
+        },
+        {
+          "id": "11:6014305378228653753",
+          "name": "qualityWarnings",
+          "type": 9
+        },
+        {
+          "id": "12:7786016877464585155",
+          "name": "heatmapPng",
+          "type": 9
+        },
+        {
+          "id": "13:7294975111411018330",
+          "name": "rating",
+          "type": 6
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "2:4370644069687472722",
+  "lastIndexId": "1:7849470855727856713",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
