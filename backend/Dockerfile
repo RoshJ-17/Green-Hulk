@@ -3,7 +3,7 @@ FROM ghcr.io/cirruslabs/flutter:stable AS flutter-builder
 
 WORKDIR /frontend
 
-COPY ../frontend/ .
+COPY frontend/ .
 
 RUN flutter pub get && \
     flutter build web --release \
@@ -18,14 +18,14 @@ WORKDIR /app
 
 RUN apk add --no-cache python3 make g++
 
-COPY package*.json ./
-COPY tsconfig*.json ./
+COPY backend/package*.json ./
+COPY backend/tsconfig*.json ./
 
 RUN printf '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.build.json"}}' > nest-cli.json
 
 RUN npm install
 
-COPY src ./src
+COPY backend/src ./src
 
 RUN ./node_modules/.bin/nest build
 
@@ -38,11 +38,11 @@ WORKDIR /app
 
 RUN apk add --no-cache python3 make g++
 
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install --omit=dev
 
 COPY --from=backend-builder /app/dist ./dist
-COPY tsconfig*.json ./
+COPY backend/tsconfig*.json ./
 
 RUN mkdir -p assets/model data public
 
