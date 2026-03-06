@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -9,7 +9,8 @@ class UpdateService {
   static const String currentVersion = '1.0.0';
 
   static Future<void> checkForUpdate(BuildContext context) async {
-    if (!Platform.isAndroid) return;
+    // Only show update prompt on Android (not web, not iOS)
+    if (kIsWeb) return;
 
     try {
       final response = await http
