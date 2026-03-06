@@ -18,7 +18,6 @@ import 'services/voice_search_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Camera and voice are not supported on web — skip on web platform
   if (!kIsWeb) {
     await initCameras();
     await VoiceSearchService.initialize();
@@ -52,7 +51,6 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
       locale: _locale,
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
-
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
@@ -63,7 +61,6 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
         '/crops': (context) => const CropSelectionScreen(),
         '/history': (context) => const HistoryScreen(),
       },
-
       onGenerateRoute: (settings) {
         if (settings.name == '/treatment') {
           if (settings.arguments is Map) {
@@ -71,8 +68,10 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
             final result = args['result'] as ScanResult;
             final isFromHistory = args['isFromHistory'] as bool? ?? false;
             return MaterialPageRoute(
-              builder: (_) =>
-                  TreatmentScreen(result: result, isFromHistory: isFromHistory),
+              builder: (_) => TreatmentScreen(
+                result: result,
+                isFromHistory: isFromHistory,
+              ),
             );
           } else {
             final result = settings.arguments as ScanResult;
