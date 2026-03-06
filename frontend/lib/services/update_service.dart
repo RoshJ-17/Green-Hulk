@@ -6,11 +6,9 @@ import 'dart:convert';
 import '../config/api_config.dart';
 
 class UpdateService {
-  // Must match your pubspec.yaml version
   static const String currentVersion = '1.0.0';
 
   static Future<void> checkForUpdate(BuildContext context) async {
-    // Only check on Android (APK updates don't apply to web/iOS)
     if (!Platform.isAndroid) return;
 
     try {
@@ -84,9 +82,7 @@ class UpdateService {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              // Opens browser to download APK
-              // requires url_launcher package
-              _launchUrl(downloadUrl);
+              await _launchUrl(downloadUrl);
             },
             child: const Text('Download Update'),
           ),
@@ -95,7 +91,7 @@ class UpdateService {
     );
   }
 
-  static void _launchUrl(String url) async {
+  static Future<void> _launchUrl(String url) async {
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
@@ -103,3 +99,4 @@ class UpdateService {
       }
     } catch (_) {}
   }
+}
