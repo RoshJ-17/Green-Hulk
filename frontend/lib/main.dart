@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -14,15 +15,17 @@ import 'services/connectivity_service.dart';
 import 'services/ai_model_service.dart';
 import 'services/voice_search_service.dart';
 
-/// 🔥 VERY IMPORTANT — APP STARTS HERE
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize all services
-  await initCameras(); // initialize camera BEFORE app starts
-  await ConnectivityService.initialize(); // connectivity monitoring
-  await AIModelService.initialize(); // AI model for disease detection
-  await VoiceSearchService.initialize(); // voice-to-text for search
+  // Camera and voice are not supported on web — skip on web platform
+  if (!kIsWeb) {
+    await initCameras();
+    await VoiceSearchService.initialize();
+  }
+
+  await ConnectivityService.initialize();
+  await AIModelService.initialize();
 
   runApp(const CropDiagnosisApp());
 }
@@ -61,10 +64,8 @@ class _CropDiagnosisAppState extends State<CropDiagnosisApp> {
         '/history': (context) => const HistoryScreen(),
       },
 
-      /// receives ScanResult after camera
       onGenerateRoute: (settings) {
         if (settings.name == '/treatment') {
-          // Support both Map arguments (new) and direct ScanResult (legacy)
           if (settings.arguments is Map) {
             final args = settings.arguments as Map;
             final result = args['result'] as ScanResult;
