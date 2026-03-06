@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   flutter_tts: ^4.2.0          # FIX: v3.x used v1 embedding; v4.x is fully v2-compatible
+  url_launcher: ^6.3.0
   camera: ^0.10.5+9
   permission_handler: ^11.3.0
   image_picker: ^1.2.1
