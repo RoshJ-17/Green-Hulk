@@ -14,6 +14,7 @@ env:
   NODE_VERSION: '18'
   FLUTTER_VERSION: '3.x'
   PYTHON_VERSION: '3.11'
+  RAILWAY_URL: https://green-hulk-production.up.railway.app
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -140,57 +141,6 @@ jobs:
         continue-on-error: true
 
   # ──────────────────────────────────────────────
-  docker-build-push:
-    name: 🐳 Docker — Build & Push Image
-    runs-on: ubuntu-latest
-    needs: [backend-build, python-test]
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      - uses: docker/login-action@v3
-        if: github.event_name != 'pull_request'
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-      - id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
-      - uses: aquasecurity/trivy-action@master
-        if: github.event_name != 'pull_request'
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
-
-  # ──────────────────────────────────────────────
   frontend-analyze:
     name: 🎯 Flutter — Analyze & Format
     runs-on: ubuntu-latest
@@ -249,7 +199,11 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build web --release --dart-define=ENVIRONMENT=production --base-href /Green-Hulk/
+      - run: |
+          flutter build web --release \
+            --dart-define=ENVIRONMENT=production \
+            --dart-define=BACKEND_URL=${{ env.RAILWAY_URL }} \
+            --base-href /
       - uses: actions/upload-artifact@v4
         with:
           name: flutter-web-build
@@ -276,8 +230,14 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter build apk --release --dart-define=ENVIRONMENT=production
-      - run: flutter build appbundle --release --dart-define=ENVIRONMENT=production
+      - run: |
+          flutter build apk --release \
+            --dart-define=ENVIRONMENT=production \
+            --dart-define=BACKEND_URL=${{ env.RAILWAY_URL }}
+      - run: |
+          flutter build appbundle --release \
+            --dart-define=ENVIRONMENT=production \
+            --dart-define=BACKEND_URL=${{ env.RAILWAY_URL }}
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
@@ -290,7 +250,89 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────
-  # DEPLOY — GITHUB PAGES (main branch only)
+  docker-build-push:
+    name: 🐳 Docker — Build & Push Image (with Frontend)
+    runs-on: ubuntu-latest
+    needs: [backend-build, python-test, frontend-build-web]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Download Flutter web build into backend/frontend-web
+      # so the Dockerfile COPY picks it up into /app/public
+      - uses: actions/download-artifact@v4
+        with:
+          name: flutter-web-build
+          path: backend/frontend-web
+
+      - uses: docker/setup-buildx-action@v3
+
+      - run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - uses: aquasecurity/trivy-action@master
+        if: github.event_name != 'pull_request'
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+  # ──────────────────────────────────────────────
+  deploy-railway:
+    name: 🚀 Deploy — Railway (Frontend + Backend)
+    runs-on: ubuntu-latest
+    needs: [docker-build-push]
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.event_name == 'push'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: https://green-hulk-production.up.railway.app
+    steps:
+      - name: Trigger Railway redeploy
+        run: |
+          if [ -n "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}" ]; then
+            curl -s -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}"
+            echo "✅ Railway redeploy triggered"
+          else
+            echo "⚠️  RAILWAY_DEPLOY_HOOK_URL secret not set."
+            echo "   Railway will auto-redeploy if connected to this GitHub repo."
+          fi
+
   # ──────────────────────────────────────────────
   deploy-github-pages:
     name: 🌍 Deploy — GitHub Pages
@@ -313,49 +355,17 @@ jobs:
           force_orphan: true
 
   # ──────────────────────────────────────────────
-  # DEPLOY — STAGING (develop branch)
-  # ──────────────────────────────────────────────
-  deploy-staging:
-    name: 🚀 Deploy — Staging
-    runs-on: ubuntu-latest
-    needs: [docker-build-push, frontend-build-web, frontend-build-android]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: staging
-      url: https://green-hulk-production.up.railway.app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: flutter-web-build
-          path: ./web-build
-      - run: echo "✅ Staging deployment complete for commit ${{ github.sha }}"
-
-  # ──────────────────────────────────────────────
-  # DEPLOY — PRODUCTION (main branch)
-  # ──────────────────────────────────────────────
   deploy-production:
-    name: 🚀 Deploy — Production
+    name: 🚀 Deploy — Production summary
     runs-on: ubuntu-latest
     needs: [docker-build-push, frontend-build-web, frontend-build-android]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://roshj-17.github.io/Green-Hulk/
+      url: https://green-hulk-production.up.railway.app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: flutter-web-build
-          path: ./web-build
-      - uses: actions/download-artifact@v4
-        with:
-          name: android-apk
-          path: ./android-artifacts
       - run: echo "✅ Production deployment complete for ${{ github.ref_name }}"
 
-  # ──────────────────────────────────────────────
-  # RELEASE
   # ──────────────────────────────────────────────
   create-release:
     name: 📦 Create GitHub Release
