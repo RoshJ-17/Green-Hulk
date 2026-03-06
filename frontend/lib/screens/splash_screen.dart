@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
-//import 'dart:async';
 import '../theme/app_theme.dart';
+import '../services/update_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-void initState() {
-  super.initState();
-  _navigate();
-}
+  void initState() {
+    super.initState();
+    _navigate();
+  }
 
-Future<void> _navigate() async {
-  await Future.delayed(const Duration(seconds: 2));
-
-  if (!mounted) return;
-
-  Navigator.pushReplacementNamed(context, '/login');
-}
-
-
+  Future<void> _navigate() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    await UpdateService.checkForUpdate(context);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +31,6 @@ Future<void> _navigate() async {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App Icon from assets
             Container(
               width: 120,
               height: 120,
@@ -54,7 +50,6 @@ Future<void> _navigate() async {
                   'assets/app_icon.png',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    // Fallback if icon not found
                     return Container(
                       decoration: BoxDecoration(
                         color: AppTheme.white,
