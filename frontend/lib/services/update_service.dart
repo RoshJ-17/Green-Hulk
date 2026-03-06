@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../config/api_config.dart';
 
@@ -97,8 +98,8 @@ class UpdateService {
   static void _launchUrl(String url) async {
     try {
       final uri = Uri.parse(url);
-      // Using http package to trigger download via browser
-      await http.get(uri);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (_) {}
   }
-}
