@@ -9,11 +9,13 @@ class FarmerCropService {
     return _selectedCrops.contains(crop);
   }
 
-  /// toggle select/deselect
+  /// Single-select: clear previous selection, then add the tapped crop.
+  /// If the same crop is tapped again, deselect it.
   static void toggleCrop(String crop) {
     if (_selectedCrops.contains(crop)) {
       _selectedCrops.remove(crop);
     } else {
+      _selectedCrops.clear(); // enforce single selection
       _selectedCrops.add(crop);
     }
   }

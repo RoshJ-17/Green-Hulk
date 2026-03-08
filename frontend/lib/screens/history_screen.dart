@@ -64,7 +64,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: HistoryItemCard(
                       imagePath: item.imagePath,
                       date: _formatDate(item.date),
-                      cropName: '${item.cropName} - ${item.diseaseName}',
+                      cropName: item.cropName,
+                      diseaseName: item.diseaseName,
                       onTap: () {
                         // Flaw #6: Pass isFromHistory flag
                         Navigator.pushNamed(
@@ -113,11 +114,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
         padding: const EdgeInsets.all(AppTheme.spacingXLarge),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.history, size: 100, color: AppTheme.lightGreen),
-            SizedBox(height: AppTheme.spacingLarge),
-            Text(
-              'No scan history yet',
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.accentGreen.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.document_scanner_outlined,
+                size: 72,
+                color: AppTheme.accentGreen,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingLarge),
+            const Text(
+              'No scans yet.',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -125,9 +137,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: AppTheme.spacingMedium),
-            Text(
-              'No scans yet — your future diagnoses will appear here',
+            const SizedBox(height: AppTheme.spacingSmall),
+            const Text(
+              'Start by scanning a crop!',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,

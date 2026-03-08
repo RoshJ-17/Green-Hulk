@@ -7,7 +7,7 @@ import '../config/api_config.dart';
 /// Fetches treatment data from the backend treatments API
 class TreatmentApiService {
   // Same base URL as AIModelService
-  static const String _baseUrl = '${ApiConfig.apiUrl}/treatments';
+  static String get _baseUrl => '${ApiConfig.apiUrl}/treatments';
 
   /// Fetch treatments for a specific disease key (e.g., "Tomato___Early_blight")
   static Future<Map<String, dynamic>?> getTreatments(String diseaseKey) async {

@@ -92,9 +92,11 @@ class VoiceSearchService {
   static bool get isListening => _isListening;
 
   /// Start listening for voice input
+  /// [localeCode] — optional language code (e.g. 'hi', 'te'); defaults to en_IN
   /// Returns recognized text via callback
   /// Vibrates when a keyword is detected
   static Future<void> startListening({
+    String? localeCode,
     required Function(String) onResult,
     required Function(String?) onKeywordDetected,
     Function()? onListeningStarted,
@@ -114,6 +116,11 @@ class VoiceSearchService {
     _lastDetectedKeyword = null;
     onListeningStarted?.call();
 
+    // Use en_IN as the default for Indian English accent
+    final resolvedLocale = (localeCode != null && localeCode != 'en')
+        ? localeCode
+        : 'en_IN';
+
     await _speech.listen(
       onResult: (result) async {
         final text = result.recognizedWords.toLowerCase();
@@ -131,7 +138,7 @@ class VoiceSearchService {
       },
       listenFor: const Duration(seconds: 10),
       pauseFor: const Duration(seconds: 3),
-      localeId: 'en_US',
+      localeId: resolvedLocale,
       listenOptions: SpeechListenOptions(partialResults: true),
     );
   }

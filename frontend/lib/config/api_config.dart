@@ -1,12 +1,32 @@
-class ApiConfig {
-  // Environment-aware base URL:
-  // Production (Railway): BACKEND_URL is injected at Flutter build time via --dart-define
-  // Local development fallback: http://127.0.0.1:3000
-  static const String baseUrl = String.fromEnvironment(
-    'BACKEND_URL',
-    defaultValue: 'http://127.0.0.1:3000',
-  );
+import 'package:flutter/foundation.dart';
 
-  static const String apiUrl = '$baseUrl/api';
-  static const String authUrl = '$baseUrl/auth';
+class ApiConfig {
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: '',
+  );
+  static const String _localFallbackUrl = 'http://127.0.0.1:3000';
+
+  static String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
+
+    if (kIsWeb) {
+      final currentUri = Uri.base;
+      final isLoopbackHost = currentUri.host == 'localhost' ||
+          currentUri.host == '127.0.0.1';
+
+      if (isLoopbackHost) {
+        return '${currentUri.scheme}://${currentUri.host}:3000';
+      }
+
+      return currentUri.origin;
+    }
+
+    return _localFallbackUrl;
+  }
+
+  static String get apiUrl => '$baseUrl/api';
+  static String get authUrl => '$baseUrl/auth';
 }

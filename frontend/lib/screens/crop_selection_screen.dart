@@ -1,28 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../services/farmer_crop_service.dart';
+import '../services/app_state.dart';
+import '../config/crop_data.dart';
 import '../services/voice_search_service.dart';
 import '../services/audio_service.dart';
 import '../services/connectivity_service.dart';
 import 'scan_camera_screen.dart';
 import '../models/scan_result.dart';
 
-const List<Map<String, String>> crops = [
-  {'name': 'Apple', 'asset': 'icons/apple.jpg'},
-  {'name': 'Blueberry', 'asset': 'icons/blueberry.jpg'},
-  {'name': 'Cherry', 'asset': 'icons/cherry.jpg'},
-  {'name': 'Corn', 'asset': 'icons/corn.png'},
-  {'name': 'Grape', 'asset': 'icons/grapes.jpg'},
-  {'name': 'Orange', 'asset': 'icons/orange.jpg'},
-  {'name': 'Peach', 'asset': 'icons/peach.jpg'},
-  {'name': 'Pepper', 'asset': 'icons/pepper.jpg'},
-  {'name': 'Potato', 'asset': 'icons/potato.jpg'},
-  {'name': 'Raspberry', 'asset': 'icons/raspberry.jpg'},
-  {'name': 'Soybean', 'asset': 'icons/soyabean.jpg'},
-  {'name': 'Squash', 'asset': 'icons/squash.jpg'},
-  {'name': 'Strawberry', 'asset': 'icons/strawberry.jpg'},
-  {'name': 'Tomato', 'asset': 'icons/tomato.png'},
-];
+// Keep the local alias so the rest of the file compiles without renaming.
+const crops = kCrops;
 
 class CropSelectionScreen extends StatefulWidget {
   const CropSelectionScreen({super.key});
@@ -80,6 +68,7 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
     });
 
     await VoiceSearchService.startListening(
+      localeCode: context.read<AppState>().locale.languageCode,
       onResult: (text) {
         if (mounted) setState(() => _recognizedText = text);
       },
@@ -111,15 +100,16 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
   /// Auto-select crop based on keyword (voice search returns canonical crop names)
   void _selectCropByKeyword(String keyword) {
     final keywordLower = keyword.toLowerCase();
+    final appState = context.read<AppState>();
 
     for (final crop in crops) {
       final cropName = crop['name']!.toLowerCase();
-      // Match if crop name contains keyword or keyword contains crop name
       if (cropName == keywordLower ||
           cropName.contains(keywordLower) ||
           keywordLower.contains(cropName)) {
-        if (!FarmerCropService.isSelected(crop['name']!)) {
-          setState(() => FarmerCropService.toggleCrop(crop['name']!));
+        if (!appState.isCropSelected(crop['name']!)) {
+          appState.toggleCrop(crop['name']!);
+          setState(() {});
         }
         break;
       }
@@ -128,74 +118,77 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
   /// Opens camera → waits result → opens treatment
   Future<void> _startScan() async {
-    final selected = FarmerCropService.selectedCrops;
+    final appState = context.read<AppState>();
+    final selected = appState.selectedCrops;
 
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select at least one crop to scan"),
+        SnackBar(
+          content: Text(appState.tr('select_crop_first')),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    final String cropToScan = selected.first;
+    String cropToScan;
+    if (selected.length == 1) {
+      cropToScan = selected.first;
+    } else {
+      // Let the user pick which crop to scan
+      final picked = await _showCropPicker(selected);
+      if (!mounted || picked == null) return;
+      cropToScan = picked;
+    }
 
     if (!mounted) return;
-
     final ScanResult? result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => ScanCameraScreen(cropName: cropToScan)),
     );
 
     if (!mounted) return;
-
     if (result != null) {
-      Navigator.pushNamed(
-        context,
-        '/treatment',
-        arguments: {'result': result, 'isFromHistory': false},
-      );
+      Navigator.pushNamed(context, '/treatment',
+          arguments: {'result': result, 'isFromHistory': false});
     }
   }
 
-  // Profile/Logout Dialog
-  void _showProfileDialog() {
-    showDialog(
+  Future<String?> _showCropPicker(List<String> selected) {
+    return showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Profile"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: AppTheme.primaryGreen,
-              child: Icon(Icons.person, size: 40, color: Colors.white),
-            ),
-            const SizedBox(height: 16),
-            const Text("User Profile"),
-            const SizedBox(height: 8),
-            Text(
-              "Logged in",
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Close"),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(width: 40, height: 4, decoration: BoxDecoration(
+              color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(context.read<AppState>().tr('scan_which_crop'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryGreen)),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Logout"),
-          ),
+          const SizedBox(height: 8),
+          ...selected.map((name) {
+            final asset = cropAsset(name);
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.lightGreen.withValues(alpha: 0.3),
+                child: asset != null
+                    ? ClipOval(child: Image.asset(asset, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.agriculture, color: AppTheme.primaryGreen)))
+                    : const Icon(Icons.agriculture, color: AppTheme.primaryGreen),
+              ),
+              title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () => Navigator.pop(context, name),
+            );
+          }),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -203,24 +196,17 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
   // Clear All Selection
   void _clearAllSelections() {
-    if (FarmerCropService.selectedCrops.isEmpty) return;
-
-    setState(() {
-      for (var cropName in List.of(FarmerCropService.selectedCrops)) {
-        FarmerCropService.toggleCrop(cropName);
-      }
-    });
-
+    final appState = context.read<AppState>();
+    if (appState.selectedCrops.isEmpty) return;
+    appState.clearCrops();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("All selections cleared"),
-        duration: Duration(seconds: 1),
-      ),
+      const SnackBar(content: Text('All selections cleared'), duration: Duration(seconds: 1)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
@@ -253,25 +239,21 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                   // ── TOP ROW: Profile | Title | Clear ──
                   Row(
                     children: [
-                      // Profile button
+                      // Back button → goes back to dashboard
                       IconButton(
                         icon: const Icon(
-                          Icons.account_circle,
+                          Icons.arrow_back,
                           color: Colors.white,
                           size: 28,
                         ),
-                        onPressed: _showProfileDialog,
-                        tooltip: 'Profile',
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Back',
                       ),
                       const Spacer(),
-                      // Clear All (only when something is selected)
-                      if (FarmerCropService.selectedCrops.isNotEmpty)
+                      // Refresh/Clear icon (only when something is selected)
+                      if (appState.hasCrops)
                         IconButton(
-                          icon: const Icon(
-                            Icons.clear_all,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                          icon: const Icon(Icons.refresh, color: Colors.white),
                           onPressed: _clearAllSelections,
                           tooltip: 'Clear Selection',
                         ),
@@ -313,9 +295,9 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                     ),
 
                   // ── Title ──
-                  const Text(
-                    'Select Your Crops',
-                    style: TextStyle(
+                  Text(
+                    appState.tr('select_your_crops'),
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -324,13 +306,27 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Choose the crops you want to scan',
+                    appState.tr('choose_crop_subtitle'),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  // Selection count badge
+                  if (appState.hasCrops) ...[const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${appState.selectedCrops.length}/${AppState.maxCrops} selected',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 14),
 
@@ -365,7 +361,9 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _isListening ? 'Stop Listening' : 'Voice Search',
+                            _isListening
+                                ? appState.tr('stop_listening')
+                                : appState.tr('voice_search'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -469,58 +467,35 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
               ),
             ),
 
-            // ── Selected crops indicator ──
-            if (FarmerCropService.selectedCrops.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.lightGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.lightGreen),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppTheme.primaryGreen,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${FarmerCropService.selectedCrops.length} crop(s) selected',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
 
             // ── CROP GRID ──
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.builder(
-                  itemCount: crops.length,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemBuilder: (context, index) {
-                    final crop = crops[index];
-                    return _buildCropCard(crop['name']!, crop['asset']!);
+                child: Consumer<AppState>(
+                  builder: (context, appState, _) {
+                    // Sort: selected crops appear at top
+                    final sorted = List<Map<String, String>>.from(kCrops)
+                      ..sort((a, b) {
+                        final aSelected = appState.isCropSelected(a['name']!) ? 0 : 1;
+                        final bSelected = appState.isCropSelected(b['name']!) ? 0 : 1;
+                        return aSelected.compareTo(bSelected);
+                      });
+                    return GridView.builder(
+                      itemCount: sorted.length,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemBuilder: (context, index) {
+                        final crop = sorted[index];
+                        return _buildCropCard(crop['name']!, crop['asset']!);
+                      },
+                    );
                   },
                 ),
               ),
@@ -564,20 +539,14 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _isOffline ? "Scan Offline" : "Start Scanning",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
+                      _isOffline
+                          ? 'Scan Offline'
+                          : appState.tr('start_scanning'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ],
                 ),
@@ -591,7 +560,8 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
 
   /// Crop Card
   Widget _buildCropCard(String cropName, String assetPath) {
-    final isSelected = FarmerCropService.isSelected(cropName);
+    final appState  = context.read<AppState>();
+    final isSelected = appState.isCropSelected(cropName);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -617,9 +587,22 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: () async {
             AudioService.playButtonClick();
-            setState(() => FarmerCropService.toggleCrop(cropName));
+            final appState = context.read<AppState>();
+            final wasSelected = appState.isCropSelected(cropName);
+            final added = await appState.toggleCrop(cropName);
+            // added==false means at max capacity AND we tried to add (not remove)
+            if (!added && !wasSelected) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(appState.tr('max_crops_msg')),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            }
           },
           child: Stack(
             children: [

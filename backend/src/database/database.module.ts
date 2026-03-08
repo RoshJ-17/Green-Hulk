@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { DataSource, DataSourceOptions } from "typeorm";
 import { ScanRecord } from "./entities/scan-record.entity";
 import { TreatmentPlan } from "./entities/treatment-plan.entity";
 import { UserPreferences } from "./entities/user-preferences.entity";
@@ -15,12 +16,30 @@ import { User } from "./entities/user.entity";
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: "sqlite",
-        database:
-          configService.get<string>("DB_PATH") || "./data/plant-disease.db",
+        type: "postgres",
+        host: configService.get<string>("DB_HOST") || "localhost",
+        port: configService.get<number>("DB_PORT") || 5432,
+        username: configService.get<string>("DB_USER") || "postgres",
+        password: configService.get<string>("DB_PASS") || "",
+        database: configService.get<string>("DB_NAME") || "green_hulk",
         entities: [ScanRecord, TreatmentPlan, UserPreferences, User],
-        synchronize: true, // Auto-create tables (disable in production)
-        logging: configService.get<string>("NODE_ENV") === "development",
+        synchronize: true,
+        retryAttempts: 0,
+        // allows the app to boot even if PostgreSQL is not yet available
+        dataSourceFactory: async (options: DataSourceOptions | undefined) => {
+          const ds = new DataSource(options!);
+          try {
+            await ds.initialize();
+          } catch (err: any) {
+            console.error(
+              "\n⚠️  [Database] PostgreSQL unavailable: " + err.message,
+            );
+            console.warn(
+              "⚠️  [Database] Running without DB — /auth/send-otp still works.\n",
+            );
+          }
+          return ds;
+        },
       }),
       inject: [ConfigService],
     }),

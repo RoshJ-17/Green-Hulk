@@ -229,6 +229,7 @@ class HistoryItemCard extends StatelessWidget {
   final String imagePath;
   final String date;
   final String cropName;
+  final String diseaseName;
   final VoidCallback onTap;
   const HistoryItemCard({
     super.key,
@@ -236,9 +237,12 @@ class HistoryItemCard extends StatelessWidget {
     required this.date,
     required this.cropName,
     required this.onTap,
+    this.diseaseName = '',
   });
   @override
   Widget build(BuildContext context) {
+    final hasDisease =
+        diseaseName.isNotEmpty && diseaseName.toLowerCase() != 'healthy';
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
@@ -247,9 +251,9 @@ class HistoryItemCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              /// IMAGE
+              /// IMAGE / THUMBNAIL
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: imagePath.startsWith('assets')
                     ? Image.asset(
                         imagePath,
@@ -279,19 +283,47 @@ class HistoryItemCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
 
-              /// TEXT AREA (IMPORTANT FIX)
+              /// TEXT AREA — Crop name + Disease chip + Date
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       cropName,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text(date, style: const TextStyle(color: Colors.grey)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: hasDisease
+                            ? Colors.red.shade50
+                            : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        diseaseName.isNotEmpty ? diseaseName : 'Healthy',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: hasDisease
+                              ? Colors.red.shade700
+                              : Colors.green.shade700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      date,
+                      style:
+                          const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
