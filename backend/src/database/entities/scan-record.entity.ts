@@ -46,7 +46,7 @@ export class ScanRecord {
   @Column({ default: false })
   isSynced: boolean;
 
-  @Column({ type: "datetime", nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   lastSyncAttempt?: Date;
 
   @Column("float", { nullable: true })

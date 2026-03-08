@@ -1,5 +1,14 @@
+// lib/screens/splash_screen.dart
+//
+// Smart routing:
+//   1st launch (no language saved)  → /language → /onboarding → /login
+//   Returning user (token valid)    → /main
+//   Returning guest / expired token → /login
+
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/app_state.dart';
+import '../services/auth_service.dart';
 import '../services/update_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,11 +25,33 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigate() async {
+    // Show splash for at least 2 seconds
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
+
+    // Check for app updates
     await UpdateService.checkForUpdate(context);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/login');
+
+    // ── Routing logic ──────────────────────────────────────────────────────
+    final firstLaunch = await AppState.isFirstLaunch();
+
+    if (firstLaunch) {
+      // Very first time — show language selection
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/language');
+      return;
+    }
+
+    // Not first launch — check if user is logged in
+    final loggedIn = await AuthService.isLoggedIn();
+    if (!mounted) return;
+
+    if (loggedIn) {
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
@@ -82,6 +113,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppTheme.white,
                 fontWeight: FontWeight.w500,
               ),
+            ),
+            const SizedBox(height: 40),
+            const CircularProgressIndicator(
+              color: AppTheme.white,
+              strokeWidth: 2,
             ),
           ],
         ),

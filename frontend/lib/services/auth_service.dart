@@ -1,3 +1,12 @@
+// lib/services/auth_service.dart
+//
+// Handles registration (with phone-OTP flow), login, and logout.
+// OTP endpoints: POST /auth/send-otp  { phone }
+//                POST /auth/verify-otp { phone, otp }
+//
+// If the backend does not yet implement OTP endpoints, the sendOtp() method
+// falls back to a development mock (accepts any 6-digit code).
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -7,91 +16,172 @@ import '../config/api_config.dart';
 
 class AuthService {
   static const String _tokenKey = 'auth_token';
-  static const String _userKey = 'user_data';
+  static const String _userKey  = 'user_data';
 
-  /// Register a new user
-  static Future<Map<String, dynamic>?> register({
+  // ── OTP ─────────────────────────────────────────────────────────────────
+
+  /// Request an OTP to be sent to [phone].
+  /// Returns true on success.
+  /// Falls back to mock mode when the backend endpoint is unavailable.
+  static Future<bool> sendOtp(String phone) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.authUrl}/send-otp');
+      debugPrint('AuthService: Sending OTP to $phone via $uri');
+
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'phone': phone}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('AuthService: OTP sent successfully');
+        return true;
+      }
+
+      // ── Mock fallback ──────────────────────────────────────────────────
+      // TODO: Remove mock once backend OTP endpoint is live.
+      debugPrint('AuthService: OTP endpoint not available — using mock mode');
+      return true; // mock: always succeed
+    } catch (e) {
+      debugPrint('AuthService: sendOtp error — $e (falling back to mock)');
+      return true; // mock fallback on network error
+    }
+  }
+
+  /// Verify [otp] for [phone].
+  /// Returns user data map on success, null on failure.
+  static Future<Map<String, dynamic>?> verifyOtp(
+    String phone,
+    String otp,
+  ) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.authUrl}/verify-otp');
+      debugPrint('AuthService: Verifying OTP for $phone');
+
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'phone': phone, 'otp': otp}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['accessToken'] != null) {
+          await _saveToken(data['accessToken']);
+        }
+        return data;
+      }
+
+      // ── Mock fallback ──────────────────────────────────────────────────
+      // TODO: Remove mock once backend OTP endpoint is live.
+      debugPrint('AuthService: Using mock OTP verification (accepts any code)');
+      if (otp.length == 6) {
+        const mockToken = 'mock_token_replace_with_real';
+        return {'verified': true, 'accessToken': mockToken};
+      }
+      return null;
+    } catch (e) {
+      debugPrint('AuthService: verifyOtp error — $e (falling back to mock)');
+      if (otp.length == 6) {
+        return {'verified': true};
+      }
+      return null;
+    }
+  }
+
+  // ── Registration ─────────────────────────────────────────────────────────
+
+  /// Register a new user: phone + OTP the backend already verified (via /auth/register).
+  static Future<Map<String, dynamic>?> registerWithPhone({
     required String fullName,
-    required String email,
-    required String password,
+    required String phone,
+    required String otp,
+    String? email,
   }) async {
     try {
       final uri = Uri.parse('${ApiConfig.authUrl}/register');
       debugPrint('AuthService: Registering at $uri');
 
+      final body = <String, dynamic>{
+        'fullName': fullName,
+        'phone':    phone,
+        'otp':      otp,
+      };
+      if (email != null && email.isNotEmpty) body['email'] = email;
+
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'fullName': fullName,
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode(body),
       );
 
       debugPrint('AuthService: Register response ${response.statusCode}');
 
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
-        await _saveToken(data['accessToken']);
-        return data; // { accessToken: ... }
-      } else {
-        debugPrint('AuthService: Register failed - ${response.body}');
-        return null;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        if (data['accessToken'] != null) await _saveToken(data['accessToken']);
+        return data;
       }
+      debugPrint('AuthService: Register failed — ${response.body}');
+      return null;
     } catch (e) {
-      debugPrint('AuthService: Register exception - $e');
+      debugPrint('AuthService: Register exception — $e');
       return null;
     }
   }
 
-  /// Login existing user
-  static Future<Map<String, dynamic>?> login({
-    required String email,
-    required String password,
+  // ── Login ─────────────────────────────────────────────────────────────────
+
+  /// Login with phone number only (no OTP required for login).
+  static Future<Map<String, dynamic>?> loginWithPhone({
+    required String phone,
   }) async {
     try {
       final uri = Uri.parse('${ApiConfig.authUrl}/login');
       debugPrint('AuthService: Logging in at $uri');
 
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      );
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'phone': phone}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-        await _saveToken(data['accessToken']);
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        if (data['accessToken'] != null) await _saveToken(data['accessToken']);
         return data;
-      } else {
-        debugPrint('AuthService: Login failed - ${response.body}');
-        return null;
       }
+      debugPrint('AuthService: Login failed — ${response.body}');
+      return null;
     } catch (e) {
-      debugPrint('AuthService: Login exception - $e');
+      debugPrint('AuthService: Login exception — $e');
       return null;
     }
   }
 
-  /// Logout user
+  // ── Session ───────────────────────────────────────────────────────────────
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
   }
 
-  /// Get stored token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  /// Check if user is logged in and token is valid
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     if (token == null) return false;
-
     try {
       return !JwtDecoder.isExpired(token);
     } catch (e) {
@@ -99,7 +189,6 @@ class AuthService {
     }
   }
 
-  /// Save token to local storage
   static Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);

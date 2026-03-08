@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../models/scan_result.dart';
 import '../screens/treatment_screen.dart';
 import '../services/ai_model_service.dart';
+import '../services/app_state.dart';
 import '../services/audio_service.dart';
 import '../services/camera_service.dart';
 import '../services/connectivity_service.dart';
@@ -53,6 +55,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   void initState() {
     super.initState();
     tts = FlutterTts();
+    _configureTts();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -66,6 +69,26 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     _initCamera();
     _initConnectivity();
     _initAIModel();
+  }
+
+  Future<void> _configureTts() async {
+    // Map each supported language code to its regional TTS locale.
+    const ttsLocaleMap = {
+      'en': 'en-IN',
+      'hi': 'hi-IN',
+      'ta': 'ta-IN',
+      'te': 'te-IN',
+      'kn': 'kn-IN',
+      'bn': 'bn-IN',
+      'pa': 'pa-IN',
+    };
+    final appState = context.read<AppState>();
+    final langCode  = appState.locale.languageCode;
+    final ttsLang   = ttsLocaleMap[langCode] ?? 'en-IN';
+    await tts.setLanguage(ttsLang);
+    await tts.setVoice({'name': '', 'locale': ttsLang});
+    await tts.setSpeechRate(0.45);
+    await tts.setVolume(1.0);
   }
 
   Future<void> _initConnectivity() async {
@@ -385,8 +408,18 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
 
   Future<void> pickFromGallery() async {
     await AudioService.playButtonClick();
+
+    // Pause camera to avoid simultaneous camera + file-picker use.
+    await controller?.pausePreview().catchError((_) {});
+
     final file = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (file == null) return;
+
+    // Resume camera if user cancelled without selecting a file.
+    if (file == null) {
+      await controller?.resumePreview().catchError((_) {});
+      return;
+    }
+
 
     final bytes    = await file.readAsBytes();
     final isBlurry = await _checkBlur(bytes);

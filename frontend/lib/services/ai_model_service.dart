@@ -19,7 +19,7 @@ import '../config/api_config.dart';
 ///   • Supports heatmap=true query param to request Grad-CAM overlay
 ///   • Parses severity as "Early Stage" | "Medium" | "Severe"
 class AIModelService {
-  static const String _baseUrl = ApiConfig.apiUrl;
+  static String get _baseUrl => ApiConfig.apiUrl;
 
   /// No initialization needed for API service
   static Future<bool> initialize() async {
