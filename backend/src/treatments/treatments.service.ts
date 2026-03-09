@@ -62,23 +62,10 @@ export class TreatmentsService {
     // We need: backend/src/treatments/data/treatments.json
     // In production after build: dist/treatments should have the copied JSON
 
-    if (__dirname.includes("dist")) {
-      // Production/compiled - JSON should be copied to dist folder
-      this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
-    } else {
-      // Development - point to source folder
-      this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
-    }
-
-    // Fallback: Always try the source path in development
-    const sourcePath = path.resolve(
-      process.cwd(),
-      "src",
-      "treatments",
-      "data",
-      "treatments.json",
-    );
-    this.treatmentsPath = sourcePath;
+    // In production (dist/): __dirname = /app/dist/treatments
+    // treatments.json is copied to /app/dist/treatments/data/treatments.json by Dockerfile
+    // In development: __dirname = src/treatments, JSON lives right alongside it
+    this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
 
     this.loadTreatments();
   }
