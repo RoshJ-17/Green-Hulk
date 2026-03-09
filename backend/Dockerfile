@@ -46,6 +46,10 @@ COPY backend/tsconfig*.json ./
 
 RUN mkdir -p assets/model data public
 
+# Copy static data files needed at runtime
+COPY backend/src/treatments/data/treatments.json ./dist/treatments/data/treatments.json
+COPY backend/models ./models
+
 COPY --from=flutter-builder /frontend/build/web ./public
 
 EXPOSE 3000
