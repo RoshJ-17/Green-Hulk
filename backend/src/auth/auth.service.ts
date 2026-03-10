@@ -29,7 +29,7 @@ export class AuthService {
 
   // ── OTP ─────────────────────────────────────────────────────────────────
 
-  async sendOtp(dto: SendOtpDto): Promise<{ message: string }> {
+  async sendOtp(dto: SendOtpDto): Promise<{ message: string; otp?: string }> {
     const { phone } = dto;
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
@@ -90,7 +90,7 @@ export class AuthService {
       );
     }
 
-    return { message: `OTP sent to ${phone}` };
+    return { message: `OTP sent to ${phone}`, otp };
   }
 
   private async validateAndClearOtp(phone: string, otp: string): Promise<User> {

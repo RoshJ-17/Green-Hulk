@@ -41,19 +41,53 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoadingStep1 = true);
 
-    final sent = await AuthService.sendOtp(_phone);
+    final result = await AuthService.sendOtp(_phone);
 
     if (!mounted) return;
     setState(() => _isLoadingStep1 = false);
 
-    if (sent) {
+    if (result != null) {
       setState(() => _step = 2);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('OTP sent to $_phone'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
+
+      // If backend returned the OTP directly (demo mode), show it in a dialog
+      if (result != 'sent' && result != 'mock' && result.length == 6) {
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('📱 Your OTP'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('SMS delivery is in demo mode. Use this OTP:'),
+                const SizedBox(height: 12),
+                Text(
+                  result,
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryGreen,
+                    letterSpacing: 8,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Got it!'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OTP sent to $_phone'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
+      }
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _otpFocusNodes[0].requestFocus();
       });
