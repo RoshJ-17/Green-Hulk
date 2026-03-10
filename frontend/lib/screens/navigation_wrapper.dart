@@ -15,6 +15,7 @@ import 'dashboard_screen.dart';
 import 'crop_selection_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
+import 'map_screen.dart';
 import 'scan_camera_screen.dart';
 import '../models/scan_result.dart';
 
@@ -33,7 +34,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     DashboardScreen(),
     CropSelectionScreen(),
     HistoryScreen(),
-    SettingsScreen(),
+    MapScreen(),
   ];
 
   void _onItemTapped(int index) async {
@@ -149,7 +150,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
               _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, context.read<AppState>().tr('nav_dashboard'), 0),
               _buildNavItem(Icons.center_focus_strong_outlined, Icons.center_focus_strong, context.read<AppState>().tr('nav_scan'), 1),
               _buildNavItem(Icons.history_outlined, Icons.history, context.read<AppState>().tr('nav_history'), 2),
-              _buildNavItem(Icons.settings_outlined, Icons.settings, context.read<AppState>().tr('nav_settings'), 3),
+              _buildNavItem(Icons.map_outlined, Icons.map, 'Map', 3),
             ],
           ),
         ),

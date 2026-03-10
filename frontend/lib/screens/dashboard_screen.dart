@@ -319,8 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.account_circle, color: Colors.white, size: 32),
-                onPressed: _showProfileDialog,
-                tooltip: 'Profile',
+                onPressed: () => Navigator.pushNamed(context, '/settings'),
+                tooltip: 'Settings',
               ),
             ],
           ),
