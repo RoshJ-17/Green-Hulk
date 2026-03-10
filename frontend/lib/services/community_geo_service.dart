@@ -8,6 +8,7 @@
 //   • Weekly disease summary
 
 import 'dart:math';
+import 'package:flutter/material.dart';
 
 class OutbreakPin {
   final String id;
@@ -100,8 +101,6 @@ class DiseaseWeeklyStat {
     required this.color,
   });
 }
-
-import 'package:flutter/material.dart';
 
 class CommunityGeoService {
   static final CommunityGeoService _instance = CommunityGeoService._();
