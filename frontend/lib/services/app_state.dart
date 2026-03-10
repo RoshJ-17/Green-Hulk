@@ -132,6 +132,10 @@ class AppState extends ChangeNotifier {
   /// Translate [key] using the current locale.
   String tr(String key) => L10nService.tr(key, _locale.languageCode);
 
+  /// Translate a crop name (given in English) using the current locale.
+  String trCrop(String cropNameEn) =>
+      L10nService.trCrop(cropNameEn, _locale.languageCode);
+
   // ═════════════════════════════════════════════════════════════════════════
   // Stats
   // ═════════════════════════════════════════════════════════════════════════

@@ -54,7 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _showLanguagePicker = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Language updated!'),
+        content: Text(context.read<AppState>().tr('language_updated')),
         backgroundColor: AppTheme.primaryGreen,
         duration: const Duration(seconds: 2),
       ),
@@ -66,17 +66,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to log out?'),
+        title: Text(context.read<AppState>().tr('logout_confirm_title')),
+        content: Text(context.read<AppState>().tr('logout_confirm_content')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.read<AppState>().tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
+            child: Text(context.read<AppState>().tr('logout')),
           ),
         ],
       ),
@@ -121,20 +121,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
 
                     // ── Profile Section ──────────────────────────────────
-                    _sectionTitle('Profile'),
+                    _sectionTitle(appState.tr('profile')),
                     const SizedBox(height: 10),
                     _buildProfileCard(isSession),
 
                     const SizedBox(height: 24),
 
                     // ── Language Section ─────────────────────────────────
-                    _sectionTitle('Language'),
+                    _sectionTitle(appState.tr('language')),
                     const SizedBox(height: 10),
 
                     // Current language tile
                     _buildTile(
                       icon: Icons.language,
-                      title: 'App Language',
+                      title: appState.tr('app_language'),
                       subtitle: '${currentLang.emoji}  ${currentLang.name}',
                       trailing: Icon(
                         _showLanguagePicker
@@ -159,13 +159,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 24),
 
                     // ── App Section ──────────────────────────────────────
-                    _sectionTitle('App'),
+                    _sectionTitle(appState.tr('app_section')),
                     const SizedBox(height: 10),
 
                     _buildTile(
                       icon: Icons.info_outline,
-                      title: 'About CropCare',
-                      subtitle: 'Version 1.0.0 • AI Crop Disease Diagnosis',
+                      title: appState.tr('about'),
+                      subtitle: appState.tr('about_subtitle'),
                       onTap: () => _showAboutDialog(context),
                     ),
 
@@ -173,12 +173,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     // ── Logout ───────────────────────────────────────────
                     if (isSession) ...[
-                      _sectionTitle('Account'),
+                      _sectionTitle(appState.tr('account')),
                       const SizedBox(height: 10),
                       _buildTile(
                         icon: Icons.logout,
-                        title: 'Logout',
-                        subtitle: 'Sign out of your account',
+                        title: appState.tr('logout'),
+                        subtitle: appState.tr('logout_subtitle'),
                         iconColor: Colors.red,
                         titleColor: Colors.red,
                         onTap: _logout,
@@ -216,13 +216,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           bottomRight: Radius.circular(30),
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.settings, color: Colors.white, size: 28),
-          SizedBox(width: 12),
+          const Icon(Icons.settings, color: Colors.white, size: 28),
+          const SizedBox(width: 12),
           Text(
-            'Settings',
-            style: TextStyle(
+            context.read<AppState>().tr('settings'),
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -268,7 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isLoggedIn ? 'Farmer Account' : 'Guest User',
+                  isLoggedIn ? context.read<AppState>().tr('farmer_account') : context.read<AppState>().tr('guest_user'),
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -278,8 +278,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 2),
                 Text(
                   isLoggedIn
-                      ? 'Logged in'
-                      : 'Login to save your scan history',
+                      ? context.read<AppState>().tr('logged_in')
+                      : context.read<AppState>().tr('login_to_save'),
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade500,

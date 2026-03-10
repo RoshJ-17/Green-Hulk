@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/scan_result.dart';
 import '../theme/app_theme.dart';
@@ -10,6 +11,8 @@ import '../services/history_service.dart';
 import '../services/ai_model_service.dart';
 import '../services/audio_service.dart';
 import '../services/treatment_api_service.dart';
+import '../services/app_state.dart';
+import '../services/localization_service.dart';
 
 class TreatmentScreen extends StatefulWidget {
   final ScanResult result;
@@ -36,6 +39,12 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   int rating = 0;
 
   late FlutterTts tts;
+  String _langCode = 'en';
+
+  static const _ttsLocaleMap = {
+    'en': 'en-IN', 'hi': 'hi-IN', 'ta': 'ta-IN',
+    'te': 'te-IN', 'kn': 'kn-IN', 'bn': 'bn-IN', 'pa': 'pa-IN',
+  };
 
   // API-fetched treatment data
   bool _isLoading = true;
@@ -70,6 +79,23 @@ class _TreatmentScreenState extends State<TreatmentScreen>
 
     _fetchTreatments();
     _decodeHeatmap();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final lang = context.read<AppState>().locale.languageCode;
+    if (lang != _langCode) {
+      _langCode = lang;
+      _configureTts(lang);
+    }
+  }
+
+  Future<void> _configureTts(String langCode) async {
+    final locale = _ttsLocaleMap[langCode] ?? 'en-IN';
+    await tts.setLanguage(locale);
+    await tts.setSpeechRate(0.45);
+    await tts.setVolume(1.0);
   }
 
   // ── Heatmap ──────────────────────────────────────────────────────────────
@@ -194,17 +220,20 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   /// SPEECH TEXT
   String _buildTreatmentSpeech() {
     if (!result.hasDisease) {
-      return "Good news! Your crop appears healthy.";
+      return L10nService.tr('tts_healthy', _langCode);
     }
 
     final treatment = showOrganicTreatment
         ? _selectedOrganicTreatment
         : _selectedChemicalTreatment;
-    if (treatment == null) return "No specific treatments available.";
+    if (treatment == null) {
+      return L10nService.tr('tts_no_treatments', _langCode);
+    }
 
     final steps = treatment['steps'] as List<dynamic>? ?? [];
-    String speech =
-        "Detected disease ${result.diseaseName}. Treatment: ${treatment['name']}. ";
+    final detected = L10nService.tr('tts_detected', _langCode);
+    final treatmentLabel = L10nService.tr('tts_treatment', _langCode);
+    String speech = "$detected ${result.diseaseName}. $treatmentLabel: ${treatment['name']}. ";
 
     for (var step in steps) {
       speech += "${step['action']}. ";
@@ -233,12 +262,13 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     if (treatment == null) return;
 
     final steps = treatment['steps'] as List<dynamic>? ?? [];
+    final appState = context.read<AppState>();
 
     String planText =
         '''
 🌿 CROP CARE TREATMENT PLAN
 ================================
-Crop:      ${result.cropName}
+Crop:      ${appState.trCrop(result.cropName)}
 Condition: ${AIModelService.getDiseaseDisplayName(result)}
 Severity:  ${result.severity ?? 'Unknown'}
 Confidence:${AIModelService.getConfidenceDisplay(result.confidence)}
@@ -270,16 +300,24 @@ Method:    ${treatment['name']}
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    // Update TTS locale whenever language changes
+    final currentLang = appState.locale.languageCode;
+    if (currentLang != _langCode) {
+      _langCode = currentLang;
+      _configureTts(currentLang);
+    }
+
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Treatment Plan')),
+        appBar: AppBar(title: Text(appState.tr('treatment_plan'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Treatment Plan"),
+        title: Text(appState.tr('treatment_plan')),
         elevation: 0,
         actions: [
           IconButton(
@@ -434,15 +472,16 @@ Method:    ${treatment['name']}
   }
 
   Widget _buildTabHeader() {
+    final appState = context.read<AppState>();
     return TabBar(
       controller: _tabController,
       labelColor: AppTheme.primaryGreen,
       unselectedLabelColor: Colors.grey,
       indicatorColor: AppTheme.primaryGreen,
-      tabs: const [
-        Tab(text: "Treatments", icon: Icon(Icons.medication_liquid)),
-        Tab(text: "Prevention", icon: Icon(Icons.shield)),
-        Tab(text: "Remedies", icon: Icon(Icons.home_repair_service)),
+      tabs: [
+        Tab(text: appState.tr('treatments'), icon: const Icon(Icons.medication_liquid)),
+        Tab(text: appState.tr('prevention'), icon: const Icon(Icons.shield)),
+        Tab(text: appState.tr('remedies'), icon: const Icon(Icons.home_repair_service)),
       ],
     );
   }
@@ -464,13 +503,13 @@ Method:    ${treatment['name']}
           child: Row(
             children: [
               Expanded(
-                child: _buildTypeButton("Organic", showOrganicTreatment, () {
+                child: _buildTypeButton(context.read<AppState>().tr('organic_tab'), showOrganicTreatment, () {
                   setState(() => showOrganicTreatment = true);
                 }, enabled: !organicOnlyMode),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildTypeButton("Chemical", !showOrganicTreatment, () {
+                child: _buildTypeButton(context.read<AppState>().tr('chemical_tab'), !showOrganicTreatment, () {
                   setState(() => showOrganicTreatment = false);
                 }, enabled: !organicOnlyMode),
               ),
@@ -489,6 +528,7 @@ Method:    ${treatment['name']}
   }
 
   Widget _buildOrganicToggle() {
+    final appState = context.read<AppState>();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -496,9 +536,9 @@ Method:    ${treatment['name']}
         children: [
           const Icon(Icons.eco, color: AppTheme.organicGreen, size: 20),
           const SizedBox(width: 8),
-          const Text(
-            "Prefer Organic",
-            style: TextStyle(fontWeight: FontWeight.w600),
+          Text(
+            appState.tr('prefer_organic'),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           Switch(
             value: organicOnlyMode,
@@ -713,19 +753,20 @@ Method:    ${treatment['name']}
   }
 
   Widget _buildHealthyState() {
+    final appState = context.read<AppState>();
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.check_circle, color: Colors.green, size: 80),
           const SizedBox(height: 16),
-          const Text(
-            "Healthy Crop!",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Text(
+            appState.tr('healthy_crop'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "No treatment plan is currently needed.",
+          Text(
+            appState.tr('no_treatment_needed'),
             textAlign: TextAlign.center,
           ),
         ],
@@ -772,9 +813,9 @@ Method:    ${treatment['name']}
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Was this helpful?",
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                context.watch<AppState>().tr('was_this_helpful'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Row(
                 children: List.generate(5, (index) {
@@ -797,7 +838,7 @@ Method:    ${treatment['name']}
                 child: OutlinedButton.icon(
                   onPressed: speaking ? stopSpeaking : speakTreatment,
                   icon: Icon(speaking ? Icons.stop : Icons.volume_up),
-                  label: Text(speaking ? "Stop" : "Listen"),
+                  label: Text(speaking ? context.read<AppState>().tr('stop') : context.read<AppState>().tr('listen')),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     side: const BorderSide(color: AppTheme.primaryGreen),
@@ -816,7 +857,7 @@ Method:    ${treatment['name']}
                     );
                   },
                   icon: const Icon(Icons.camera_alt),
-                  label: const Text("New Scan"),
+                  label: Text(context.read<AppState>().tr('new_scan')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
                     foregroundColor: Colors.white,

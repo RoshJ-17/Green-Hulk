@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../services/app_state.dart';
 
 /// Placeholder data for the three onboarding cards.
 class _CardData {
-  final String title;
+  final String titleKey; // localization key
   final IconData icon;
   final Color color;
-  const _CardData(this.title, this.icon, this.color);
+  const _CardData(this.titleKey, this.icon, this.color);
 }
 
 const _cards = [
-  _CardData('Scan Crop Leaf', Icons.camera_alt_rounded, Color(0xFF66BB6A)),
-  _CardData('AI Analysis', Icons.psychology_rounded, Color(0xFF42A5F5)),
-  _CardData('Solutions & Remedies', Icons.local_florist_rounded, Color(0xFFFFA726)),
+  _CardData('onboard_scan_leaf', Icons.camera_alt_rounded, Color(0xFF66BB6A)),
+  _CardData('onboard_ai_analysis', Icons.psychology_rounded, Color(0xFF42A5F5)),
+  _CardData('onboard_solutions', Icons.local_florist_rounded, Color(0xFFFFA726)),
 ];
 
 class OnboardingScreen extends StatefulWidget {
@@ -68,6 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -84,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   height: size.height * 0.50,
                   child: AnimatedBuilder(
                     animation: _anim,
-                    builder: (ctx, _) => _buildStack(size),
+                    builder: (ctx, _) => _buildStack(size, appState),
                   ),
                 ),
               ),
@@ -130,18 +133,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         shadowColor:
                             AppTheme.primaryGreen.withValues(alpha: 0.4),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Get Started',
-                            style: TextStyle(
+                            appState.tr('get_started'),
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded, size: 24),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 24),
                         ],
                       ),
                     ),
@@ -155,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildStack(Size size) {
+  Widget _buildStack(Size size, AppState appState) {
     final List<Widget> layers = [];
 
     // Background cards (drawn first → behind)
@@ -169,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           offset: Offset(0, -yShift),
           child: Transform.scale(
             scale: scale,
-            child: _card(_cards[idx]),
+            child: _card(_cards[idx], appState),
           ),
         ),
       );
@@ -184,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             offset: Offset(_slide.value * size.width, 0),
             child: Transform.rotate(
               angle: _rotate.value,
-              child: _card(_cards[_current]),
+              child: _card(_cards[_current], appState),
             ),
           );
         },
@@ -197,7 +200,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _card(_CardData data) {
+  Widget _card(_CardData data, AppState appState) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
@@ -232,7 +235,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           ),
           const SizedBox(height: 28),
           Text(
-            data.title,
+            appState.tr(data.titleKey),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 26,
@@ -247,15 +250,4 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-/// AnimatedBuilder is just an alias for AnimatedWidget-style usage.
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext, Widget?) builder;
-  const AnimatedBuilder({
-    super.key,
-    required Animation<double> animation,
-    required this.builder,
-  }) : super(listenable: animation);
 
-  @override
-  Widget build(BuildContext context) => builder(context, null);
-}

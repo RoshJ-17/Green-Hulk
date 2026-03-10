@@ -91,6 +91,45 @@ export class TreatmentsService {
   }
 
   /**
+   * Normalize a disease key for lookup.
+   *
+   * Accepts:
+   *   - Full key:  "Tomato___Early_blight"   (preferred, used by treatments.json)
+   *   - Short key: "Early_blight"             (disease portion only)
+   *   - Encoded:   any URL-decoded variant
+   *
+   * Returns the matching key from the cache, or null if not found.
+   */
+  private resolveKey(rawKey: string): string | null {
+    // 1. Exact match
+    if (this.treatmentsCache.has(rawKey)) return rawKey;
+
+    // 2. Case-insensitive exact match
+    for (const key of this.treatmentsCache.keys()) {
+      if (key.toLowerCase() === rawKey.toLowerCase()) return key;
+    }
+
+    // 3. If rawKey looks like just a disease (no "___"), search by disease portion
+    if (!rawKey.includes('___')) {
+      for (const key of this.treatmentsCache.keys()) {
+        const diseasePart = key.includes('___') ? key.split('___')[1] : key;
+        if (diseasePart.toLowerCase() === rawKey.toLowerCase()) return key;
+      }
+    }
+
+    // 4. If rawKey has "___", also try matching by disease portion only
+    if (rawKey.includes('___')) {
+      const [, rawDisease] = rawKey.split('___');
+      for (const key of this.treatmentsCache.keys()) {
+        const diseasePart = key.includes('___') ? key.split('___')[1] : key;
+        if (diseasePart.toLowerCase() === rawDisease.toLowerCase()) return key;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Get treatments for a specific disease with optional filters
    * Task 3.1.1 & 3.2.1: Treatment retrieval with organic filtering
    */
@@ -100,13 +139,15 @@ export class TreatmentsService {
   ): Promise<DiseaseData> {
     this.logger.debug(`Getting treatments for ${diseaseKey}`);
 
-    const diseaseData = this.treatmentsCache.get(diseaseKey);
+    const resolvedKey = this.resolveKey(diseaseKey);
 
-    if (!diseaseData) {
+    if (!resolvedKey) {
       throw new NotFoundException(
-        `No treatments found for disease: ${diseaseKey}`,
+        `Treatment information not available for this disease`,
       );
     }
+
+    const diseaseData = this.treatmentsCache.get(resolvedKey)!;
 
     // Apply filters
     if (filters) {

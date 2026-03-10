@@ -116,7 +116,7 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
     }
   }
 
-  /// Opens camera → waits result → opens treatment
+  /// Opens camera and scans any of the selected crops (no picking required)
   Future<void> _startScan() async {
     final appState = context.read<AppState>();
     final selected = appState.selectedCrops;
@@ -131,20 +131,12 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
       return;
     }
 
-    String cropToScan;
-    if (selected.length == 1) {
-      cropToScan = selected.first;
-    } else {
-      // Let the user pick which crop to scan
-      final picked = await _showCropPicker(selected);
-      if (!mounted || picked == null) return;
-      cropToScan = picked;
-    }
-
     if (!mounted) return;
+    // Always pass 'any' — backend detects the crop from the image.
+    // No need to ask the user which specific crop they are scanning.
     final ScanResult? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ScanCameraScreen(cropName: cropToScan)),
+      MaterialPageRoute(builder: (_) => const ScanCameraScreen(cropName: 'any')),
     );
 
     if (!mounted) return;
@@ -154,53 +146,16 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
     }
   }
 
-  Future<String?> _showCropPicker(List<String> selected) {
-    return showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(
-              color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(context.read<AppState>().tr('scan_which_crop'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryGreen)),
-          ),
-          const SizedBox(height: 8),
-          ...selected.map((name) {
-            final asset = cropAsset(name);
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppTheme.lightGreen.withValues(alpha: 0.3),
-                child: asset != null
-                    ? ClipOval(child: Image.asset(asset, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.agriculture, color: AppTheme.primaryGreen)))
-                    : const Icon(Icons.agriculture, color: AppTheme.primaryGreen),
-              ),
-              title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              onTap: () => Navigator.pop(context, name),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
   // Clear All Selection
   void _clearAllSelections() {
     final appState = context.read<AppState>();
     if (appState.selectedCrops.isEmpty) return;
     appState.clearCrops();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All selections cleared'), duration: Duration(seconds: 1)),
+      SnackBar(
+        content: Text(appState.tr('all_selections_cleared')),
+        duration: const Duration(seconds: 1),
+      ),
     );
   }
 
@@ -652,7 +607,7 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      cropName,
+                      appState.trCrop(cropName),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

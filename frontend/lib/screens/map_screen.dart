@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../services/app_state.dart';
 
 class MapScreen extends StatelessWidget {
   const MapScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
@@ -29,19 +32,19 @@ class MapScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text(
-                  'Crop Health Map',
-                  style: TextStyle(
+                Text(
+                  appState.tr('crop_health_map'),
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryGreen,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'We are building a geographical view to track plant diseases in your region. Stay tuned!',
+                Text(
+                  appState.tr('map_subtitle'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                     height: 1.5,
@@ -64,9 +67,9 @@ class MapScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Text(
-                    'COMING SOON',
-                    style: TextStyle(
+                  child: Text(
+                    appState.tr('map_coming_soon'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,

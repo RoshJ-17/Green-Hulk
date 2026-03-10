@@ -30,73 +30,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // ── Smart scan: if 1 crop → camera directly; if >1 → picker; else → /crops ──
+  // ── Scan: always go to camera with 'any' (model identifies crop automatically) ──
   Future<void> _onScanTap() async {
-    final appState = context.read<AppState>();
-    final selected = appState.selectedCrops;
-    if (selected.isEmpty) {
-      Navigator.pushNamed(context, '/crops');
-      return;
-    }
-    String cropToScan;
-    if (selected.length == 1) {
-      cropToScan = selected.first;
-    } else {
-      final picked = await _showCropPicker(appState);
-      if (!mounted || picked == null) return;
-      cropToScan = picked;
-    }
     if (!mounted) return;
     final ScanResult? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ScanCameraScreen(cropName: cropToScan)),
+      MaterialPageRoute(builder: (_) => const ScanCameraScreen(cropName: 'any')),
     );
     if (!mounted) return;
     if (result != null) {
       Navigator.pushNamed(context, '/treatment',
           arguments: {'result': result, 'isFromHistory': false});
     }
-  }
-
-  Future<String?> _showCropPicker(AppState appState) {
-    final selected = appState.selectedCrops;
-    return showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(
-              color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(appState.tr('scan_which_crop'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryGreen)),
-          ),
-          const SizedBox(height: 8),
-          ...selected.map((name) {
-            final asset = cropAsset(name);
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppTheme.lightGreen.withValues(alpha: 0.3),
-                child: asset != null
-                    ? ClipOval(child: Image.asset(asset, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.agriculture, color: AppTheme.primaryGreen)))
-                    : const Icon(Icons.agriculture, color: AppTheme.primaryGreen),
-              ),
-              title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              onTap: () => Navigator.pop(context, name),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
   }
 
   @override
@@ -205,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 24),
 
                     // ── Tips Card ────────────────────────────────────────
-                    _buildTipCard(),
+                    _buildTipCard(appState),
 
                     const SizedBox(height: 100), // Space for bottom nav
                   ],
@@ -406,7 +351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(name, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold,
+                        Text(appState.trCrop(name), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold,
                             color: AppTheme.primaryGreen), overflow: TextOverflow.ellipsis),
                       ],
                     ),
@@ -532,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTipCard() {
+  Widget _buildTipCard(AppState appState) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -559,22 +504,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Icon(Icons.lightbulb_outline, color: AppTheme.accentGreen, size: 24),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pro Tip',
-                  style: TextStyle(
+                  appState.tr('pro_tip'),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryGreen,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'For best scan results, capture the leaf in good lighting and keep the camera steady.',
-                  style: TextStyle(
+                  appState.tr('pro_tip_text'),
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Colors.grey,
                     height: 1.4,

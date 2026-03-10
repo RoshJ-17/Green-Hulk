@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, ParseBoolPipe } from "@nestjs/common";
+import { Controller, Get, Param, Query, ParseBoolPipe, NotFoundException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 import { TreatmentsService } from "@treatments/treatments.service";
 
@@ -41,7 +41,14 @@ export class TreatmentsController {
     @Query("organicOnly", new ParseBoolPipe({ optional: true }))
     organicOnly?: boolean,
   ) {
-    return this.treatmentsService.getTreatments(diseaseKey, { organicOnly });
+    try {
+      return await this.treatmentsService.getTreatments(diseaseKey, { organicOnly });
+    } catch (e) {
+      if (e instanceof NotFoundException) {
+        return { message: "Treatment information not available for this disease" };
+      }
+      throw e;
+    }
   }
 
   /**

@@ -18,6 +18,8 @@ import '../services/history_service.dart';
 import '../services/pending_upload_service.dart';
 
 class ScanCameraScreen extends StatefulWidget {
+  /// Pass the English crop name (e.g. "Tomato") for a single-crop scan,
+  /// or "any" to let the AI detect the crop from the selected list.
   final String cropName;
 
   const ScanCameraScreen({super.key, required this.cropName});
@@ -71,20 +73,20 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     _initAIModel();
   }
 
+  static const _ttsLocaleMap = {
+    'en': 'en-IN',
+    'hi': 'hi-IN',
+    'ta': 'ta-IN',
+    'te': 'te-IN',
+    'kn': 'kn-IN',
+    'bn': 'bn-IN',
+    'pa': 'pa-IN',
+  };
+
   Future<void> _configureTts() async {
-    // Map each supported language code to its regional TTS locale.
-    const ttsLocaleMap = {
-      'en': 'en-IN',
-      'hi': 'hi-IN',
-      'ta': 'ta-IN',
-      'te': 'te-IN',
-      'kn': 'kn-IN',
-      'bn': 'bn-IN',
-      'pa': 'pa-IN',
-    };
     final appState = context.read<AppState>();
     final langCode  = appState.locale.languageCode;
-    final ttsLang   = ttsLocaleMap[langCode] ?? 'en-IN';
+    final ttsLang   = _ttsLocaleMap[langCode] ?? 'en-IN';
     await tts.setLanguage(ttsLang);
     await tts.setVoice({'name': '', 'locale': ttsLang});
     await tts.setSpeechRate(0.45);
@@ -215,8 +217,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           hasDisease:  true,
         );
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Scan saved! Will process when online.'),
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.read<AppState>().tr('offline_cached')),
           backgroundColor: Colors.orange,
         ));
         Navigator.pop(context, offlineResult);
@@ -267,9 +270,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Preview',
-                    style: TextStyle(
+                  Text(
+                    context.read<AppState>().tr('preview'),
+                    style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -284,7 +287,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Does the leaf fill the frame clearly?',
+                    context.read<AppState>().tr('leaf_frame_hint'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 13, color: Colors.grey.shade600),
@@ -296,7 +299,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.of(ctx).pop(false),
                           icon: const Icon(Icons.replay),
-                          label: const Text('Retake'),
+                          label: Text(context.read<AppState>().tr('retake')),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -304,7 +307,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                         child: ElevatedButton.icon(
                           onPressed: () => Navigator.of(ctx).pop(true),
                           icon: const Icon(Icons.check_circle),
-                          label: const Text('Use this'),
+                          label: Text(context.read<AppState>().tr('use_this')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
@@ -341,22 +344,17 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: const [
-            Icon(Icons.blur_on, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Image Too Blurry'),
+          children: [
+            const Icon(Icons.blur_on, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(context.read<AppState>().tr('image_too_blurry')),
           ],
         ),
-        content: const Text(
-          'The photo looks out of focus.\n\n'
-          '• Hold the camera still\n'
-          '• Tap the screen to focus on the leaf\n'
-          '• Make sure there is enough light',
-        ),
+        content: Text(context.read<AppState>().tr('blur_instructions')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(context.read<AppState>().tr('cancel')),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -364,7 +362,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
               onRetry();
             },
             icon: const Icon(Icons.camera_alt),
-            label: const Text('Try Again'),
+            label: Text(context.read<AppState>().tr('try_again')),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
           ),
         ],
@@ -378,7 +376,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       await tts.stop();
       setState(() => speaking = false);
     } else {
-      await tts.speak("Align the leaf inside the outline and hold steady");
+      final appState = context.read<AppState>();
+      await _configureTts();
+      await tts.speak(appState.tr('voice_guide_text'));
       setState(() => speaking = true);
     }
   }
@@ -396,9 +396,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     setState(() => heatmapOn = !heatmapOn);
     AudioService.playButtonClick();
     if (heatmapOn) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Grad-CAM heatmap will be generated after scan'),
-        duration: Duration(seconds: 2),
+      final appState = context.read<AppState>();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(appState.tr('heatmap_will_generate')),
+        duration: const Duration(seconds: 2),
         backgroundColor: Colors.deepOrange,
       ));
     }
@@ -577,14 +578,14 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                     width: double.infinity,
                     color: Colors.orange,
                     padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.wifi_off, color: Colors.white, size: 14),
-                        SizedBox(width: 8),
+                        const Icon(Icons.wifi_off, color: Colors.white, size: 14),
+                        const SizedBox(width: 8),
                         Text(
-                          "YOU ARE OFFLINE - SCANS WILL BE CACHED",
-                          style: TextStyle(
+                          context.watch<AppState>().tr('offline_scans_cached'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
@@ -625,16 +626,16 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                                 ],
                               ),
                               child: Row(
-                                children: const [
-                                  Icon(
+                                children: [
+                                  const Icon(
                                     Icons.wifi_off,
                                     color: Colors.white,
                                     size: 16,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    "OFFLINE",
-                                    style: TextStyle(
+                                    context.watch<AppState>().tr('offline_mode'),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
@@ -644,7 +645,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                               ),
                             )
                           : Text(
-                              "Scan ${widget.cropName}",
+                              context.watch<AppState>().tr('scan_plant'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -688,9 +689,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                 color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Centre the leaf in the box',
-                style: TextStyle(
+                        child: Text(
+                context.watch<AppState>().tr('centre_leaf'),
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500),

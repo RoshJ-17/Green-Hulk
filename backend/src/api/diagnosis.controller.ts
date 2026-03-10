@@ -68,7 +68,7 @@ export class DiagnosisController {
     }
 
     // Validate crop
-    if (!this.supportedClasses.isCropSupported(dto.selectedCrop)) {
+    if (dto.selectedCrop.toLowerCase() !== 'any' && !this.supportedClasses.isCropSupported(dto.selectedCrop)) {
       throw new BadRequestException(
         `Unsupported crop: ${dto.selectedCrop}. Supported crops: ${this.supportedClasses.getSupportedCrops().join(", ")}`,
       );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../services/app_state.dart';
 import '../services/history_service.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -30,10 +32,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     final historyItems = HistoryService.history;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan History')),
+      appBar: AppBar(title: Text(appState.tr('history_title'))),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -64,7 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: HistoryItemCard(
                       imagePath: item.imagePath,
                       date: _formatDate(item.date),
-                      cropName: item.cropName,
+                      cropName: appState.trCrop(item.cropName),
                       diseaseName: item.diseaseName,
                       onTap: () {
                         // Flaw #6: Pass isFromHistory flag
@@ -84,24 +87,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   /// CONFIRM DELETE DIALOG
   Future<bool?> _confirmDelete(int index) async {
+    final appState = context.read<AppState>();
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Scan?"),
-        content: const Text(
-          "Are you sure you want to remove this diagnosis from history?",
-        ),
+        title: Text(appState.tr('delete_scan')),
+        content: Text(appState.tr('delete_scan_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text(appState.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
               setState(() => HistoryService.removeResult(index));
               Navigator.pop(context, true);
             },
-            child: const Text("Delete"),
+            child: Text(appState.tr('delete')),
           ),
         ],
       ),
@@ -109,6 +111,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildEmptyState() {
+    final appState = context.read<AppState>();
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingXLarge),
@@ -128,9 +131,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             const SizedBox(height: AppTheme.spacingLarge),
-            const Text(
-              'No scans yet.',
-              style: TextStyle(
+            Text(
+              appState.tr('no_scans_yet'),
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryGreen,
@@ -138,9 +141,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppTheme.spacingSmall),
-            const Text(
-              'Start by scanning a crop!',
-              style: TextStyle(
+            Text(
+              appState.tr('start_scanning'),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.accentGreen,

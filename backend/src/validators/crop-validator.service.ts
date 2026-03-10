@@ -18,23 +18,30 @@ export class CropValidatorService {
   ): ValidationResult {
     const predictedLabel = labels[predictedClassIndex];
     const predictedCrop = this.extractCropName(predictedLabel);
-    const normalizedSelected =
-      this.supportedClasses.normalizeCropName(selectedCrop);
-    const normalizedPredicted =
-      this.supportedClasses.normalizeCropName(predictedCrop);
 
-    // Check 1: Crop mismatch
-    if (normalizedSelected !== normalizedPredicted) {
-      return {
-        type: "wrongCrop",
-        selectedCrop,
-        detectedCrop: predictedCrop,
-        message:
-          `This appears to be ${predictedCrop}, but you selected ${selectedCrop}.\n\n` +
-          `Options:\n` +
-          `• Change selection to ${predictedCrop}\n` +
-          `• Retake photo of ${selectedCrop} leaf`,
-      };
+    // When "any" is passed (multi-crop scan), skip crop-match check and
+    // accept whatever crop the model detected.
+    const skipCropCheck = selectedCrop.toLowerCase() === 'any';
+
+    if (!skipCropCheck) {
+      const normalizedSelected =
+        this.supportedClasses.normalizeCropName(selectedCrop);
+      const normalizedPredicted =
+        this.supportedClasses.normalizeCropName(predictedCrop);
+
+      // Check 1: Crop mismatch
+      if (normalizedSelected !== normalizedPredicted) {
+        return {
+          type: "wrongCrop",
+          selectedCrop,
+          detectedCrop: predictedCrop,
+          message:
+            `This appears to be ${predictedCrop}, but you selected ${selectedCrop}.\n\n` +
+            `Options:\n` +
+            `• Change selection to ${predictedCrop}\n` +
+            `• Retake photo of ${selectedCrop} leaf`,
+        };
+      }
     }
 
     // Check 2: Low quality/confidence

@@ -12,7 +12,11 @@ class TreatmentApiService {
   /// Fetch treatments for a specific disease key (e.g., "Tomato___Early_blight")
   static Future<Map<String, dynamic>?> getTreatments(String diseaseKey) async {
     try {
-      final uri = Uri.parse('$_baseUrl/$diseaseKey');
+      // URL-encode the key so that special characters (spaces, parentheses)
+      // in keys like "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot"
+      // are transmitted correctly.
+      final encodedKey = Uri.encodeComponent(diseaseKey);
+      final uri = Uri.parse('$_baseUrl/$encodedKey');
       debugPrint('TreatmentAPI: Fetching treatments from $uri');
 
       final response = await http.get(uri);
@@ -22,7 +26,7 @@ class TreatmentApiService {
         debugPrint('TreatmentAPI: Got treatments for $diseaseKey');
         return data;
       } else {
-        debugPrint('TreatmentAPI: Error ${response.statusCode}');
+        debugPrint('TreatmentAPI: Error ${response.statusCode} for $diseaseKey');
         return null;
       }
     } catch (e) {
@@ -34,7 +38,8 @@ class TreatmentApiService {
   /// Fetch only organic treatments for a disease
   static Future<List<dynamic>> getOrganicTreatments(String diseaseKey) async {
     try {
-      final uri = Uri.parse('$_baseUrl/$diseaseKey/organic');
+      final encodedKey = Uri.encodeComponent(diseaseKey);
+      final uri = Uri.parse('$_baseUrl/$encodedKey/organic');
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {
@@ -51,7 +56,8 @@ class TreatmentApiService {
   /// Fetch chemical treatments for a disease
   static Future<List<dynamic>> getChemicalTreatments(String diseaseKey) async {
     try {
-      final uri = Uri.parse('$_baseUrl/$diseaseKey/chemical');
+      final encodedKey = Uri.encodeComponent(diseaseKey);
+      final uri = Uri.parse('$_baseUrl/$encodedKey/chemical');
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {
@@ -68,7 +74,8 @@ class TreatmentApiService {
   /// Fetch home remedies for a disease
   static Future<List<dynamic>> getHomeRemedies(String diseaseKey) async {
     try {
-      final uri = Uri.parse('$_baseUrl/$diseaseKey/home-remedies');
+      final encodedKey = Uri.encodeComponent(diseaseKey);
+      final uri = Uri.parse('$_baseUrl/$encodedKey/home-remedies');
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {

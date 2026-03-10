@@ -130,14 +130,20 @@ static ScanResult _parseResponse(Map<String, dynamic> data, String cropName, Str
   
   switch (type) {
     case 'success':
+      final fullLabel = data['fullLabel'] as String?;
+      // When cropName is 'any', derive the actual crop from the fullLabel
+      // e.g. "Tomato___Early_blight" → "Tomato"
+      final actualCrop = cropName == 'any' && fullLabel != null
+          ? fullLabel.split('___').first.replaceAll('_(', ' ').replaceAll('_', ' ').trim()
+          : cropName;
       return ScanResult(
-        cropName:    cropName,
+        cropName:    actualCrop,
         diseaseName: data['disease'] as String? ?? 'Unknown',
         confidence:  (data['confidence'] as num?)?.toDouble() ?? 0.0,
         imagePath:   imagePath,
         hasDisease:  !(data['disease'] as String? ?? '').toLowerCase().contains('healthy'),
         severity:    data['severity'] as String?,
-        fullLabel:   data['fullLabel'] as String?,
+        fullLabel:   fullLabel,
       );
     case 'wrongCrop':
       throw Exception('Wrong crop detected: ${data['detectedCrop']}. You selected ${data['selectedCrop']}.');
