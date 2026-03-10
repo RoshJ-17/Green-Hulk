@@ -216,11 +216,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           bottomRight: Radius.circular(30),
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.settings, color: Colors.white, size: 28),
-          SizedBox(width: 12),
-          Text(
+          GestureDetector(
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+                context, '/main', (route) => false),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Icon(Icons.settings, color: Colors.white, size: 28),
+          const SizedBox(width: 12),
+          const Text(
             'Settings',
             style: TextStyle(
               fontSize: 26,
