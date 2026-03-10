@@ -51,16 +51,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // If backend returned the OTP directly (demo mode), show it in a dialog
       if (result != 'sent' && result != 'mock' && result.length == 6) {
+        // Auto-copy OTP to clipboard for convenience
+        await Clipboard.setData(ClipboardData(text: result));
+
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('📱 Your OTP'),
+            title: const Text('📱 Your OTP Code'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('SMS delivery is in demo mode. Use this OTP:'),
-                const SizedBox(height: 12),
-                Text(
+                const Text(
+                  'Here is your OTP to complete verification.\n(It has been copied to your clipboard!)',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
                   result,
                   style: const TextStyle(
                     fontSize: 36,
