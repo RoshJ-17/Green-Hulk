@@ -10,11 +10,12 @@ import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { SendOtpDto } from "./dto/send-otp.dto";
+import { VerifyOtpDto } from "./dto/verify-otp.dto";
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post("send-otp")
   @ApiOperation({ summary: "Send OTP to phone number" })
@@ -22,6 +23,14 @@ export class AuthController {
   @UsePipes(new ValidationPipe())
   async sendOtp(@Body() sendOtpDto: SendOtpDto) {
     return this.authService.sendOtp(sendOtpDto);
+  }
+
+  @Post("verify-otp")
+  @ApiOperation({ summary: "Verify OTP and return token" })
+  @ApiResponse({ status: 200, description: "OTP verified correctly" })
+  @UsePipes(new ValidationPipe())
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+    return this.authService.verifyOtp(verifyOtpDto);
   }
 
   @Post("register")

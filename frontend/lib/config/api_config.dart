@@ -5,7 +5,7 @@ class ApiConfig {
     'BACKEND_URL',
     defaultValue: '',
   );
-  static const String _localFallbackUrl = 'http://127.0.0.1:3000';
+  static const String _localFallbackUrl = 'http://192.168.106.183:3000';
 
   static String get baseUrl {
     if (_configuredBaseUrl.isNotEmpty) {
