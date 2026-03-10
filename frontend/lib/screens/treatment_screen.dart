@@ -13,6 +13,7 @@ import '../services/audio_service.dart';
 import '../services/treatment_api_service.dart';
 import '../services/app_state.dart';
 import '../services/localization_service.dart';
+import '../services/gemini_translation_service.dart';
 import '../widgets/weather_advisory_card.dart';
 import '../widgets/medicine_calculator_widget.dart';
 import '../widgets/chemical_safety_widget.dart';
@@ -50,6 +51,9 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     'te': 'te-IN', 'kn': 'kn-IN', 'bn': 'bn-IN', 'pa': 'pa-IN',
   };
 
+  // Translated disease name for TTS
+  String? _translatedDiseaseName;
+
   // API-fetched treatment data
   bool _isLoading = true;
   String? _errorMessage;
@@ -78,7 +82,8 @@ class _TreatmentScreenState extends State<TreatmentScreen>
 
     tts = FlutterTts();
     tts.setCompletionHandler(() {
-      if (mounted) setState(() => speaking = false);
+      if (!mounted) return;
+      setState(() => speaking = false);
     });
 
     _fetchTreatments();
@@ -121,10 +126,20 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     setState(() => _heatmapLoading = true);
     try {
       final refreshed = await AIModelService.analyzeImage(
-        imagePath:   result.imagePath,
-        cropName:    result.cropName,
+        imagePath: result.imagePath,
+        cropName: result.cropName,
         withHeatmap: true,
       );
+
+      if (!mounted) return;
+
+      if (refreshed.heatmapPng != null) {
+        _heatmapBytes = base64Decode(refreshed.heatmapPng!);
+        setState(() {
+          _showHeatmap = true;
+          _heatmapLoading = false;
+        });
+      }
       if (refreshed.heatmapPng != null && mounted) {
         _heatmapBytes = base64Decode(refreshed.heatmapPng!);
         setState(() {
@@ -145,40 +160,137 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   }
 
   /// Fetch treatments from backend API
-  Future<void> _fetchTreatments() async {
-    if (!result.hasDisease) {
-      setState(() => _isLoading = false);
-      return;
+ Future<void> _fetchTreatments() async {
+  if (!result.hasDisease) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    return;
+  }
+
+  final diseaseKey =
+      result.fullLabel ?? '${result.cropName}___${result.diseaseName}';
+
+  try {
+    final data = await TreatmentApiService.getTreatments(diseaseKey);
+
+    if (!mounted) return;
+
+    if (data != null) {
+      final translated = await _translateDiseaseData(data, _langCode);
+
+      if (!mounted) return;
+
+      _diseaseData = translated;
+
+      if (_langCode != 'en') {
+        _translatedDiseaseName =
+            await GeminiTranslationService.translate(result.diseaseName, _langCode);
+      } else {
+        _translatedDiseaseName = result.diseaseName;
+      }
+
+      if (!mounted) return;
+
+      final allTreatments = _diseaseData!['treatments'] as List<dynamic>? ?? [];
+
+      _selectedOrganicTreatment = _findTreatment(allTreatments, true);
+      _selectedChemicalTreatment = _findTreatment(allTreatments, false);
+    } else {
+      _errorMessage = 'Could not load treatments. Using default advice.';
+      _setFallbackData();
     }
 
-    // Build disease key - prefer fullLabel, fallback to constructed key
-    final diseaseKey =
-        result.fullLabel ?? '${result.cropName}___${result.diseaseName}';
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-    try {
-      final data = await TreatmentApiService.getTreatments(diseaseKey);
-      if (mounted) {
-        if (data != null) {
-          _diseaseData = data;
-          final allTreatments = data['treatments'] as List<dynamic>? ?? [];
+  } catch (e) {
+    debugPrint('Error fetching treatments: $e');
 
-          // Select first of each type
-          _selectedOrganicTreatment = _findTreatment(allTreatments, true);
-          _selectedChemicalTreatment = _findTreatment(allTreatments, false);
-        } else {
-          _errorMessage = 'Could not load treatments. Using default advice.';
-          _setFallbackData();
+    if (!mounted) return;
+
+    _errorMessage = 'Connection error. Using offline advice.';
+    _setFallbackData();
+
+    setState(() => _isLoading = false);
+  }
+}
+
+  /// Deep-copies and translates relevant string fields in the treatment API
+  /// response into [langCode].  Returns the mutated copy (or the original if
+  /// translation is disabled / an error occurs).
+  Future<Map<String, dynamic>> _translateDiseaseData(
+      Map<String, dynamic> data, String langCode) async {
+    if (langCode == 'en' || GeminiTranslationService.apiKey.isEmpty) {
+      return data;
+    }
+
+    // Work on a shallow copy so we don't mutate the API cache
+    final translated = Map<String, dynamic>.from(data);
+
+    // Translate description
+    if (translated['description'] is String) {
+      translated['description'] = await GeminiTranslationService.translate(
+          translated['description'] as String, langCode);
+    }
+
+    // Translate each treatment's name + steps
+    if (translated['treatments'] is List) {
+      final treatments = (translated['treatments'] as List).map((t) async {
+        if (t is! Map) return t;
+        final tMap = Map<String, dynamic>.from(t as Map<String, dynamic>);
+        if (tMap['name'] is String) {
+          tMap['name'] = await GeminiTranslationService.translate(
+              tMap['name'] as String, langCode);
         }
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      debugPrint('Error fetching treatments: $e');
-      if (mounted) {
-        _errorMessage = 'Connection error. Using offline advice.';
-        _setFallbackData();
-        setState(() => _isLoading = false);
-      }
+        if (tMap['steps'] is List) {
+          tMap['steps'] = await Future.wait(
+            (tMap['steps'] as List).map((s) async {
+              if (s is! Map) return s;
+              final sMap = Map<String, dynamic>.from(s as Map<String, dynamic>);
+              if (sMap['action'] is String) {
+                sMap['action'] = await GeminiTranslationService.translate(
+                    sMap['action'] as String, langCode);
+              }
+              return sMap;
+            }),
+          );
+        }
+        return tMap;
+      });
+      translated['treatments'] = await Future.wait(treatments);
     }
+
+    // Translate prevention actions
+    if (translated['prevention'] is List) {
+      translated['prevention'] = await Future.wait(
+        (translated['prevention'] as List).map((p) async {
+          if (p is! Map) return p;
+          final pMap = Map<String, dynamic>.from(p as Map<String, dynamic>);
+          if (pMap['action'] is String) {
+            pMap['action'] = await GeminiTranslationService.translate(
+                pMap['action'] as String, langCode);
+          }
+          return pMap;
+        }),
+      );
+    }
+
+    // Translate remedies actions
+    if (translated['remedies'] is List) {
+      translated['remedies'] = await Future.wait(
+        (translated['remedies'] as List).map((r) async {
+          if (r is! Map) return r;
+          final rMap = Map<String, dynamic>.from(r as Map<String, dynamic>);
+          if (rMap['action'] is String) {
+            rMap['action'] = await GeminiTranslationService.translate(
+                rMap['action'] as String, langCode);
+          }
+          return rMap;
+        }),
+      );
+    }
+
+    return translated;
   }
 
   Map<String, dynamic>? _findTreatment(List<dynamic> treatments, bool organic) {
@@ -237,7 +349,7 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     final steps = treatment['steps'] as List<dynamic>? ?? [];
     final detected = L10nService.tr('tts_detected', _langCode);
     final treatmentLabel = L10nService.tr('tts_treatment', _langCode);
-    String speech = "$detected ${result.diseaseName}. $treatmentLabel: ${treatment['name']}. ";
+    String speech = "$detected ${_translatedDiseaseName ?? result.diseaseName}. $treatmentLabel: ${treatment['name']}. ";
 
     for (var step in steps) {
       speech += "${step['action']}. ";
@@ -258,6 +370,7 @@ class _TreatmentScreenState extends State<TreatmentScreen>
 
   /// Print/Save treatment plan
   Future<void> _shareTreatmentPlan() async {
+    if (!mounted) return;
     await AudioService.playButtonClick();
 
     final treatment = showOrganicTreatment
@@ -314,18 +427,49 @@ Method:    ${treatment['name']}
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text(appState.tr('treatment_plan'))),
+        appBar: AppBar(
+          backgroundColor: AppTheme.primaryGreen,
+          foregroundColor: Colors.white,
+          title: Text(appState.tr('treatment_plan')),
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appState.tr('treatment_plan')),
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
         elevation: 0,
+        title: Text(
+          appState.tr('treatment_plan'),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share),
+            icon: const Icon(Icons.share, color: Colors.white),
             onPressed: _shareTreatmentPlan,
           ),
         ],

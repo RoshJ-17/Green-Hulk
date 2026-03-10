@@ -36,51 +36,99 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final historyItems = HistoryService.history;
 
     return Scaffold(
-      appBar: AppBar(title: Text(appState.tr('history_title'))),
+      backgroundColor: AppTheme.cream,
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : historyItems.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppTheme.spacingMedium,
+        child: Column(
+          children: [
+            // ── Styled Header with back arrow ──────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryGreen, Color(0xFF43A047)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                itemCount: historyItems.length,
-                itemBuilder: (context, index) {
-                  final item = historyItems[index];
-
-                  return Dismissible(
-                    key: ValueKey(item.id), // Flaw #6: Use unique ID
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (_) => _confirmDelete(index),
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      child: const Icon(
-                        Icons.delete,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    child: HistoryItemCard(
-                      imagePath: item.imagePath,
-                      date: _formatDate(item.date),
-                      cropName: appState.trCrop(item.cropName),
-                      diseaseName: item.diseaseName,
-                      onTap: () {
-                        // Flaw #6: Pass isFromHistory flag
-                        Navigator.pushNamed(
-                          context,
-                          '/treatment',
-                          arguments: {'result': item, 'isFromHistory': true},
-                        );
-                      },
-                    ),
-                  );
-                },
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
               ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamedAndRemoveUntil(
+                        context, '/main', (route) => false),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Icon(Icons.history_rounded, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    appState.tr('history_title'),
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // ── Body ──────────────────────────────────────────────────
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : historyItems.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTheme.spacingMedium,
+                          ),
+                          itemCount: historyItems.length,
+                          itemBuilder: (context, index) {
+                            final item = historyItems[index];
+                            return Dismissible(
+                              key: ValueKey(item.id),
+                              direction: DismissDirection.endToStart,
+                              confirmDismiss: (_) => _confirmDelete(index),
+                              background: Container(
+                                color: Colors.red,
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                  size: 30,
+                                ),
+                              ),
+                              child: HistoryItemCard(
+                                imagePath: item.imagePath,
+                                date: _formatDate(item.date),
+                                cropName: item.cropName,
+                                diseaseName: item.diseaseName,
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/treatment',
+                                    arguments: {'result': item, 'isFromHistory': true},
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -100,7 +148,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() => HistoryService.removeResult(index));
+              HistoryService.removeResult(index);
+              setState(() {});
+              appState.refreshStatsLocal();
               Navigator.pop(context, true);
             },
             child: Text(appState.tr('delete')),

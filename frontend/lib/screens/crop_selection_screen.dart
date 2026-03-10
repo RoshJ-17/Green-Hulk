@@ -201,7 +201,8 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                           color: Colors.white,
                           size: 28,
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                            context, '/main', (route) => false),
                         tooltip: 'Back',
                       ),
                       const Spacer(),

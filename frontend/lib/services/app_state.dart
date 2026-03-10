@@ -136,6 +136,10 @@ class AppState extends ChangeNotifier {
   String trCrop(String cropNameEn) =>
       L10nService.trCrop(cropNameEn, _locale.languageCode);
 
+  /// Translate a disease name (given in English) using the current locale.
+  String trDisease(String diseaseEn) =>
+      L10nService.trDisease(diseaseEn, _locale.languageCode);
+
   // ═════════════════════════════════════════════════════════════════════════
   // Stats
   // ═════════════════════════════════════════════════════════════════════════
@@ -145,6 +149,15 @@ class AppState extends ChangeNotifier {
     await HistoryService.fetchHistory();
     final history = HistoryService.history;
 
+    _totalScans    = history.length;
+    _diseasedScans = history.where((r) => r.hasDisease).length;
+    notifyListeners();
+  }
+
+  /// Update stats from the current in-memory history without hitting the network.
+  /// Call this after local deletions so the dashboard reflects changes immediately.
+  void refreshStatsLocal() {
+    final history = HistoryService.history;
     _totalScans    = history.length;
     _diseasedScans = history.where((r) => r.hasDisease).length;
     notifyListeners();

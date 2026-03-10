@@ -1,0 +1,45 @@
+# Lightweight Railway Dockerfile — NestJS backend only (no Flutter web build)
+
+# ── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
+
+COPY backend/package*.json ./
+COPY backend/tsconfig*.json ./
+
+# Use a fixed nest-cli to avoid issues with compilerOptions merge
+RUN printf '{"$schema":"https://json.schemastore.org/nest-cli","collection":"@nestjs/schematics","sourceRoot":"src","compilerOptions":{"deleteOutDir":false,"webpack":false,"tsConfigPath":"tsconfig.build.json"}}' > nest-cli.json
+
+RUN npm install
+
+COPY backend/src ./src
+
+RUN ./node_modules/.bin/nest build
+
+RUN test -f dist/main.js && echo "BUILD OK" || (echo "BUILD FAILED" && exit 1)
+
+# ── Stage 2: Production ──────────────────────────────────────────────────────
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
+
+COPY backend/package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY backend/tsconfig*.json ./
+
+# Copy static data files needed at runtime
+RUN mkdir -p dist/treatments/data models
+COPY backend/src/treatments/data/treatments.json ./dist/treatments/data/treatments.json
+COPY backend/models ./models
+
+EXPOSE 3000
+ENV NODE_ENV=production
+
+CMD ["node", "-r", "tsconfig-paths/register", "dist/main"]

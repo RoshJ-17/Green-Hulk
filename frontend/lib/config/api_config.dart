@@ -6,7 +6,6 @@ class ApiConfig {
     'BACKEND_URL',
     defaultValue: '',
   );
-
   /// On Android the loopback 127.0.0.1 points to the device itself.
   /// The Android emulator routes 10.0.2.2 to the host machine (your PC).
   static String get _localFallbackUrl {

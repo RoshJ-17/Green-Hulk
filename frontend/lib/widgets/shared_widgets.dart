@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
+import '../services/app_state.dart';
+import '../services/localization_service.dart';
+import '../services/gemini_translation_service.dart';
 
 /// NO INTERNET - LOCAL SCAN BADGE
 class OfflineBadge extends StatelessWidget {
@@ -241,8 +245,11 @@ class HistoryItemCard extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final appState = context.read<AppState>();
+    final langCode = appState.locale.languageCode;
     final hasDisease =
         diseaseName.isNotEmpty && diseaseName.toLowerCase() != 'healthy';
+    final translatedCropName = L10nService.trCrop(cropName, langCode);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
@@ -289,7 +296,7 @@ class HistoryItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      cropName,
+                      translatedCropName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -298,23 +305,32 @@ class HistoryItemCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: hasDisease
-                            ? Colors.red.shade50
-                            : Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        diseaseName.isNotEmpty ? diseaseName : 'Healthy',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                    // Disease name — translated asynchronously via Gemini (cached)
+                    FutureBuilder<String>(
+                      future: hasDisease
+                          ? GeminiTranslationService.translate(diseaseName, langCode)
+                          : Future.value(L10nService.tr('healthy', langCode)),
+                      initialData: hasDisease
+                          ? diseaseName
+                          : L10nService.tr('healthy', langCode),
+                      builder: (_, snap) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
                           color: hasDisease
-                              ? Colors.red.shade700
-                              : Colors.green.shade700,
+                              ? Colors.red.shade50
+                              : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          snap.data!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: hasDisease
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
+                          ),
                         ),
                       ),
                     ),

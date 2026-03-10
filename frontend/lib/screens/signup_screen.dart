@@ -54,20 +54,58 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!_step1Key.currentState!.validate()) return;
     setState(() => _isLoadingStep1 = true);
 
-    final sent = await AuthService.sendOtp(_phoneController.text.trim());
+    final result = await AuthService.sendOtp(_phoneController.text.trim());
 
     if (!mounted) return;
     setState(() => _isLoadingStep1 = false);
 
-    if (sent) {
+    if (result != null) {
       setState(() => _step = 2);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('OTP sent to ${_phoneController.text.trim()}'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
-      // Focus first OTP box
+
+      if (result != 'sent' && result != 'mock' && result.length == 6) {
+        // Auto-copy OTP to clipboard for convenience
+        await Clipboard.setData(ClipboardData(text: result));
+
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('📱 Your OTP Code'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Here is your OTP to complete verification.\n(It has been copied to your clipboard!)',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
+                  result,
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryGreen,
+                    letterSpacing: 8,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Got it!'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OTP sent to ${_phoneController.text.trim()}'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
+      }
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _otpFocusNodes[0].requestFocus();
       });

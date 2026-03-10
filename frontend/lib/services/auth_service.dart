@@ -21,9 +21,9 @@ class AuthService {
   // ── OTP ─────────────────────────────────────────────────────────────────
 
   /// Request an OTP to be sent to [phone].
-  /// Returns true on success.
-  /// Falls back to mock mode when the backend endpoint is unavailable.
-  static Future<bool> sendOtp(String phone) async {
+  /// Returns the OTP string on success (shown on screen for demo),
+  /// or null on failure.
+  static Future<String?> sendOtp(String phone) async {
     try {
       final uri = Uri.parse('${ApiConfig.authUrl}/send-otp');
       debugPrint('AuthService: Sending OTP to $phone via $uri');
@@ -37,17 +37,17 @@ class AuthService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('AuthService: OTP sent successfully');
-        return true;
+        final data = json.decode(response.body);
+        final otp = data['otp'] as String?;
+        debugPrint('AuthService: OTP sent successfully. OTP=$otp');
+        return otp ?? 'sent'; // 'sent' = SMS delivered, no code in response
       }
 
-      // ── Mock fallback ──────────────────────────────────────────────────
-      // TODO: Remove mock once backend OTP endpoint is live.
-      debugPrint('AuthService: OTP endpoint not available — using mock mode');
-      return true; // mock: always succeed
+      debugPrint('AuthService: sendOtp failed with status ${response.statusCode}');
+      return null;
     } catch (e) {
-      debugPrint('AuthService: sendOtp error — $e (falling back to mock)');
-      return true; // mock fallback on network error
+      debugPrint('AuthService: sendOtp error — $e');
+      return null;
     }
   }
 
@@ -77,19 +77,10 @@ class AuthService {
         return data;
       }
 
-      // ── Mock fallback ──────────────────────────────────────────────────
-      // TODO: Remove mock once backend OTP endpoint is live.
-      debugPrint('AuthService: Using mock OTP verification (accepts any code)');
-      if (otp.length == 6) {
-        const mockToken = 'mock_token_replace_with_real';
-        return {'verified': true, 'accessToken': mockToken};
-      }
+      debugPrint('AuthService: verifyOtp failed with status ${response.statusCode} — ${response.body}');
       return null;
     } catch (e) {
-      debugPrint('AuthService: verifyOtp error — $e (falling back to mock)');
-      if (otp.length == 6) {
-        return {'verified': true};
-      }
+      debugPrint('AuthService: verifyOtp error — $e');
       return null;
     }
   }

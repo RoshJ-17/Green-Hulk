@@ -57,7 +57,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
 
     setState(() => _selectedIndex = index);
     if (index == 0 && mounted) {
-      context.read<AppState>().refreshStats();
+      context.read<AppState>().refreshStatsLocal();
     }
   }
 
