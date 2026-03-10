@@ -54,20 +54,52 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!_step1Key.currentState!.validate()) return;
     setState(() => _isLoadingStep1 = true);
 
-    final sent = await AuthService.sendOtp(_phoneController.text.trim());
+    final result = await AuthService.sendOtp(_phoneController.text.trim());
 
     if (!mounted) return;
     setState(() => _isLoadingStep1 = false);
 
-    if (sent) {
+    if (result != null) {
       setState(() => _step = 2);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('OTP sent to ${_phoneController.text.trim()}'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
-      // Focus first OTP box
+
+      if (result != 'sent' && result != 'mock' && result.length == 6) {
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('📱 Your OTP'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('SMS delivery is in demo mode. Use this OTP:'),
+                const SizedBox(height: 12),
+                Text(
+                  result,
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryGreen,
+                    letterSpacing: 8,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Got it!'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OTP sent to ${_phoneController.text.trim()}'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
+      }
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _otpFocusNodes[0].requestFocus();
       });
