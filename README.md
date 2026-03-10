@@ -1,12 +1,13 @@
 # Green-Hulk 🌱
 
-Plant Disease Detection Application with AI-powered diagnosis using TensorFlow Lite.
+AI-powered plant disease detection app — scan a leaf, get instant diagnosis, treatment plans, weather spray advisories, and more.
 
 ---
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Features](#features)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -20,34 +21,59 @@ Plant Disease Detection Application with AI-powered diagnosis using TensorFlow L
 ## 🌟 Overview
 
 Green-Hulk is a full-stack plant disease detection system consisting of:
-- **Flutter Frontend** - Mobile/Desktop app for image capture and diagnosis
-- **Node.js Backend (NestJS)** - REST API for image processing and orchestration
-- **Python TFLite Service** - Microservice for TensorFlow Lite model inference
+- **Flutter Frontend** — Mobile app for image capture, video scan, diagnosis results, treatments, and more
+- **Node.js Backend (NestJS)** — REST API for image processing, auth, scan history, and orchestration
+- **Python TFLite Service** — Lightweight Flask microservice that runs TensorFlow Lite model inference
 
-The system uses a pre-trained TFLite model to identify 38 different plant disease classes from leaf images.
+The system uses a pre-trained TFLite model trained on the PlantVillage dataset to identify **38 plant disease classes** across 14 crop types.
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 📸 **Single-shot scan** | Capture a leaf photo and get instant AI diagnosis |
+| 🎥 **Video multi-frame scan** | 3-frame rapid capture with majority-vote consensus for higher accuracy |
+| 🌦️ **Weather spray advisory** | Real-time wind, rain & humidity check — tells you the best time to spray chemicals |
+| 💊 **Medicine dosage calculator** | Calculate exact chemical/water quantities for your field size (acre / hectare / bigha) |
+| ⚠️ **Chemical safety checklist** | PPE requirements, toxicity badge, bee pollinator warning, after-spray instructions |
+| 🌿 **Enhanced prevention** | Disease-specific prevention + crop rotation, soil health, and resistant variety tips |
+| 🗣️ **Voice crop search** | Speak the crop name instead of typing |
+| 📜 **Scan history** | Local + server-synced history of all previous diagnoses |
+| 🌐 **Multi-language UI** | English, Hindi, Tamil, Telugu, Kannada, Bengali, Punjabi |
+| 📴 **Offline queue** | Scans queued while offline, auto-synced when connectivity returns |
+| 🔔 **OTA update check** | Notifies users when a new app version is available |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐
-│ Flutter Frontend│ (Port: Dynamic)
-└────────┬────────┘
-         │ HTTP POST /api/diagnose
-         ▼
-┌─────────────────┐
-│ NestJS Backend  │ (Port: 3000)
-│ - Image Upload  │
-│ - Preprocessing │
-└────────┬────────┘
-         │ HTTP POST /predict
-         ▼
-┌─────────────────┐
-│ Python TFLite   │ (Port: 5000)
-│ - Model.tflite  │
-│ - Inference     │
-└─────────────────┘
+┌───────────────────────────────────┐
+│         Flutter App               │
+│  - Onboarding / Auth              │
+│  - Camera (single + video scan)   │
+│  - Treatment + Weather advisory   │
+│  - Medicine & Safety widgets      │
+│  - History / Settings             │
+└────────────────┬──────────────────┘
+                 │ POST /api/diagnose  (multipart: image + selectedCrop)
+                 ▼
+┌───────────────────────────────────┐
+│       NestJS Backend :3000        │
+│  - Auth (OTP / JWT)               │
+│  - Image quality & crop checks    │
+│  - Treatments / Localization      │
+│  - Scan history (SQLite)          │
+└────────────────┬──────────────────┘
+                 │ POST /predict  (flat Float32 [1,224,224,3])
+                 ▼
+┌───────────────────────────────────┐
+│   Python Flask TFLite :5000       │
+│  - model.tflite inference         │
+│  - Returns 38 probabilities       │
+└───────────────────────────────────┘
 ```
 
 ---
@@ -55,16 +81,16 @@ The system uses a pre-trained TFLite model to identify 38 different plant diseas
 ## ✅ Prerequisites
 
 ### System Requirements
-- **Node.js**: v22.16.0 or higher
-- **Python**: 3.11.9 or higher
-- **Flutter**: 3.x or higher
-- **Git**: For cloning the repository
+- **Node.js**: v22+ 
+- **Python**: 3.11+
+- **Flutter**: 3.x (Dart SDK ^3.9.0)
+- **Git**
 
 ### Verify Installations
 ```bash
-node --version    # Should show v22+
-python --version  # Should show 3.11+
-flutter --version # Should show 3.x+
+node --version    # v22+
+python --version  # 3.11+
+flutter --version # 3.x
 ```
 
 ---
@@ -77,112 +103,66 @@ git clone https://github.com/RoshJ-17/Green-Hulk.git
 cd Green-Hulk
 ```
 
-### 2. Backend Setup (Node.js + NestJS)
+### 2. Backend Setup
 
-#### Install Node.js Dependencies
 ```bash
 cd backend
 npm install
+pip install tensorflow flask flask-cors numpy
 ```
 
-**Required Packages:**
-- `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`
-- `@tensorflow/tfjs` (for type definitions)
-- `sharp` (image processing)
-- `multer` (file uploads)
-- `typeorm`, `sqlite3` (database)
-
-#### Install Python Dependencies
-```bash
-# Still in backend directory
-pip install tensorflow flask flask-cors
-```
-
-**Required Python Packages:**
-- `tensorflow` (for TFLite interpreter)
-- `flask` (microservice framework)
-- `flask-cors` (CORS support)
-- `numpy` (array operations)
-
-### 3. Frontend Setup (Flutter)
+### 3. Frontend Setup
 
 ```bash
 cd ../frontend
 flutter pub get
 ```
 
-**Required Flutter Packages:**
-- `http` (API calls)
-- `camera` (image capture)
-- `image_picker` (gallery selection)
-- `provider` (state management)
-
 ---
 
 ## 🚀 Running the Application
 
-You need to run **THREE** services in **separate terminals**:
+Run **three services** in separate terminals:
 
-### Terminal 1: Python TFLite Service
+### Terminal 1 — Python TFLite Service
 
 ```bash
 cd backend
 python tflite_service.py
 ```
 
-**Expected Output:**
+**Expected:**
 ```
-============================================================
 TFLite Inference Service Started
-============================================================
-Model: ./models/model.tflite
-Input shape: [  1 224 224   3]
-Output shape: [ 1 38]
-Listening on port: 5000
-============================================================
+Model: ./models/model.tflite  |  Input: [1,224,224,3]  |  Output: [1,38]
+Running on http://0.0.0.0:5000
 ```
-
-✅ **Service Ready When:** You see "Running on http://0.0.0.0:5000"
 
 ---
 
-### Terminal 2: Node.js Backend
+### Terminal 2 — NestJS Backend
 
 ```bash
 cd backend
 npm run start:dev
 ```
 
-**Expected Output:**
+**Expected:**
 ```
-[Nest] LOG [ModelLoaderService] ✅ TFLite service is healthy - model: loaded
-[Nest] LOG [NestApplication] Nest application successfully started
-[Nest] LOG [Bootstrap] Application is running on: http://localhost:3000
-[Nest] LOG [Bootstrap] Swagger documentation: http://localhost:3000/api/docs
+[ModelLoaderService] ✅ TFLite service is healthy - model: loaded
+[Bootstrap] Application is running on: http://localhost:3000
+[Bootstrap] Swagger docs: http://localhost:3000/api/docs
 ```
-
-✅ **Service Ready When:** You see "✅ TFLite service is healthy"
 
 ---
 
-### Terminal 3: Flutter Frontend
+### Terminal 3 — Flutter App
 
 ```bash
 cd frontend
-flutter run
+flutter run                    # connected device / emulator
+flutter run -d chrome          # web
 ```
-
-**For Web:**
-```bash
-flutter run -d chrome
-```
-
-**For Mobile (with device connected):**
-```bash
-flutter run
-```
-
-✅ **App Ready When:** Flutter console shows "Application started"
 
 ---
 
@@ -192,331 +172,240 @@ flutter run
 Green-Hulk/
 ├── backend/
 │   ├── src/
-│   │   ├── api/              # Controllers (REST endpoints)
-│   │   ├── ml/               # ML services
-│   │   │   └── model-loader.service.ts  # Calls Python service
-│   │   ├── image/            # Image processing
-│   │   └── main.ts           # Entry point
+│   │   ├── api/                     # REST controllers
+│   │   │   ├── diagnosis.controller.ts
+│   │   │   ├── scans.controller.ts
+│   │   │   ├── treatments.controller.ts
+│   │   │   ├── localization.controller.ts
+│   │   │   ├── preferences.controller.ts
+│   │   │   └── version.controller.ts
+│   │   ├── auth/                    # OTP + JWT auth
+│   │   ├── diagnosis/               # 8-step diagnosis pipeline
+│   │   │   ├── diagnosis.service.ts
+│   │   │   └── helpers/             # confidence + severity helpers
+│   │   ├── image/                   # sharp-based preprocessing
+│   │   ├── ml/
+│   │   │   ├── model-loader.service.ts   # calls Python /predict
+│   │   │   └── label-loader.service.ts   # loads class_indices.json
+│   │   ├── database/                # TypeORM + SQLite scan records
+│   │   ├── common/                  # OOD detector, crop validator, quality checker
+│   │   ├── treatments/              # treatment data service
+│   │   ├── localization/            # i18n service
+│   │   └── validators/
 │   ├── models/
-│   │   ├── model.tflite      # TFLite model file
-│   │   └── plant-disease-model/
-│   │       └── class_indices.json  # Disease class mappings
-│   ├── tflite_service.py     # Python microservice
+│   │   ├── model.tflite             # TFLite model (38 classes, PlantVillage)
+│   │   ├── class_indices.json       # label → index mapping
+│   │   └── model_info.json          # input/output shape metadata
+│   ├── tflite_service.py            # Flask inference microservice
 │   ├── tflite_service_config.json
+│   ├── inspect_model.py             # utility: print model metadata
 │   └── package.json
 │
-├── frontend/
-│   ├── lib/
-│   │   ├── services/
-│   │   │   └── ai_model_service.dart  # Calls backend API
-│   │   ├── screens/          # UI screens
-│   │   └── main.dart         # Entry point
-│   ├── assets/
-│   │   └── model/
-│   │       ├── model.tflite  # (Reference copy)
-│   │       └── class_indices.json
-│   └── pubspec.yaml
-│
-└── README.md
+└── frontend/
+    ├── lib/
+    │   ├── main.dart
+    │   ├── config/
+    │   │   └── api_config.dart      # base URL resolution per platform
+    │   ├── models/
+    │   │   └── scan_result.dart
+    │   ├── services/
+    │   │   ├── ai_model_service.dart       # POST /api/diagnose, image optimisation
+    │   │   ├── video_scan_service.dart     # 3-frame rapid capture + majority vote
+    │   │   ├── weather_service.dart        # WeatherAPI spray advisory
+    │   │   ├── auth_service.dart           # OTP / JWT login
+    │   │   ├── history_service.dart        # local + server scan history
+    │   │   ├── treatment_api_service.dart  # GET /api/treatments/*
+    │   │   ├── connectivity_service.dart   # online/offline detection
+    │   │   ├── pending_upload_service.dart # offline scan queue
+    │   │   ├── voice_search_service.dart   # speech-to-text crop search
+    │   │   ├── audio_service.dart          # button / shutter / result sounds
+    │   │   ├── camera_service.dart         # camera initialisation
+    │   │   ├── farmer_crop_service.dart    # crop selection state
+    │   │   ├── localization_service.dart   # 7-language translations
+    │   │   ├── app_state.dart              # global ChangeNotifier
+    │   │   └── update_service.dart         # OTA version check
+    │   ├── screens/
+    │   │   ├── onboarding_screen.dart      # redesigned Get Started screen
+    │   │   ├── splash_screen.dart
+    │   │   ├── language_selection_screen.dart
+    │   │   ├── login_screen.dart
+    │   │   ├── signup_screen.dart
+    │   │   ├── navigation_wrapper.dart
+    │   │   ├── dashboard_screen.dart
+    │   │   ├── scan_camera_screen.dart     # single + video scan
+    │   │   ├── treatment_screen.dart       # treatment + weather + calculator
+    │   │   ├── history_screen.dart
+    │   │   ├── crop_selection_screen.dart
+    │   │   ├── map_screen.dart
+    │   │   └── settings_screen.dart
+    │   └── widgets/
+    │       ├── weather_advisory_card.dart    # spray advisory card
+    │       ├── medicine_calculator_widget.dart  # dosage calculator
+    │       ├── chemical_safety_widget.dart   # PPE checklist + toxicity
+    │       ├── prevention_section_widget.dart # crop rotation, soil, seeds
+    │       └── shared_widgets.dart
+    ├── assets/
+    │   ├── images/
+    │   │   ├── onboarding_background.png
+    │   │   ├── onboarding_scan_leaf.png
+    │   │   ├── onboarding_ai_analysis.png
+    │   │   └── onboarding_solutions.png
+    │   ├── model/
+    │   │   ├── model.tflite          # (reference copy for future on-device use)
+    │   │   └── class_indices.json
+    │   ├── icons/
+    │   └── app_icon.png
+    └── pubspec.yaml
 ```
 
 ---
 
 ## 🔌 API Documentation
 
-### Backend Endpoints
+### Diagnosis
 
-#### Health Check
-```http
-GET http://localhost:3000/api/health
-```
-
-#### Diagnose Plant Disease
 ```http
 POST http://localhost:3000/api/diagnose
 Content-Type: multipart/form-data
 
-{
-  "image": <file>,
-  "selectedCrop": "Tomato"
-}
+image        = <leaf image file>
+selectedCrop = "Tomato"   # or "any"
 ```
 
-**Response:**
+**Success response:**
 ```json
 {
   "type": "success",
-  "disease": "Tomato___Late_blight",
+  "disease": "Late Blight",
+  "fullLabel": "Tomato___Late_blight",
   "confidence": 0.92,
-  "severity": "high",
+  "severity": "Severe",
   "cropType": "Tomato"
 }
 ```
 
-### Python TFLite Service Endpoints
-
-#### Health Check
-```http
-GET http://localhost:5000/health
-```
-
-#### Predict
-```http
-POST http://localhost:5000/predict
-Content-Type: application/json
-
-{
-  "input": [<150528 float32 values>]
-}
-```
-
-### Swagger Documentation
-Access interactive API docs at: **http://localhost:3000/api/docs**
+**Error response types:** `wrongCrop` · `lowConfidence` · `outOfDistribution` · `poorQuality`
 
 ---
 
-## 🔧 Configuration
+### Other Endpoints
 
-### Backend Configuration
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/crops` | List of supported crop names |
+| GET | `/api/diseases/:crop` | Diseases for a specific crop |
+| GET | `/api/treatments/:key` | Full treatment plan |
+| GET | `/api/scans/history` | Paginated scan history |
+| GET | `/api/scans/stats` | Scan statistics |
+| POST | `/api/scans/sync` | Sync offline scans |
+| POST | `/auth/send-otp` | Send OTP to phone |
+| POST | `/auth/verify-otp` | Verify OTP |
+| POST | `/auth/login` | Login (returns JWT) |
+| GET | `/api/version` | Current app version info |
 
-**Environment Variables** (optional, in `backend/.env`):
+**Swagger UI:** `http://localhost:3000/api/docs`
+
+---
+
+## 🎯 Model Information
+
+| Property | Value |
+|---|---|
+| Format | TensorFlow Lite (`.tflite`) |
+| Input shape | `[1, 224, 224, 3]` — RGB, normalised 0–1 |
+| Output shape | `[1, 38]` — probability over 38 classes |
+| Dataset | PlantVillage |
+| Crops covered | Apple, Blueberry, Cherry, Corn, Grape, Orange, Peach, Pepper bell, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato |
+
+---
+
+## ⚙️ Configuration
+
+### Backend — `.env` (optional)
+
 ```env
 PORT=3000
-MODEL_PATH=./models/model.tflite
 TFLITE_SERVICE_URL=http://localhost:5000
+LABELS_PATH=./models/class_indices.json
 ```
 
-### Python Service Configuration
+### Frontend — URL resolution ([frontend/lib/config/api_config.dart](frontend/lib/config/api_config.dart))
 
-Edit `backend/tflite_service_config.json`:
-```json
-{
-  "modelPath": "./models/model.tflite",
-  "classIndicesPath": "../frontend/assets/model/class_indices.json",
-  "inputShape": [1, 224, 224, 3],
-  "outputShape": [1, 38],
-  "port": 5000
-}
-```
-
-### Frontend Configuration
-
-Update backend URL in `frontend/lib/services/ai_model_service.dart`:
-```dart
-static const String _baseUrl = 'http://192.168.1.100:3000/api';
-// For Android Emulator: use 10.0.2.2
-// For Physical Device: use your machine's LAN IP
-```
+| Target | URL |
+|---|---|
+| Android Emulator | `http://10.0.2.2:3000/api` |
+| iOS Simulator / Desktop | `http://127.0.0.1:3000/api` |
+| Web | same-origin |
+| Override | `--dart-define=BACKEND_URL=http://192.168.x.x:3000/api` |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Issue: "TFLite service not available"
+### "TFLite service not available"
+Start the Python service first (`python tflite_service.py`), then the NestJS backend.
 
-**Solution:**
-1. Ensure Python service is running first (Terminal 1)
-2. Check port 5000 is not in use:
-   ```bash
-   # Windows
-   netstat -ano | findstr :5000
-   
-   # Linux/Mac
-   lsof -i :5000
-   ```
-
-### Issue: "Port 3000 already in use"
-
-**Solution:**
-```bash
-# Windows
+### Port conflicts
+```powershell
+# Kill Node on port 3000
 Get-Process -Name node | Stop-Process -Force
 
-# Linux/Mac
-killall node
+# Check what's on port 5000
+netstat -ano | findstr :5000
 ```
 
-### Issue: "Module not found" errors in Python
-
-**Solution:**
+### Flutter build errors
 ```bash
-pip install tensorflow flask flask-cors numpy
-```
-
-### Issue: Backend can't find model file
-
-**Solution:**
-Verify model file exists:
-```bash
-ls backend/models/model.tflite
-ls backend/models/plant-disease-model/class_indices.json
-```
-
-If missing, copy from frontend:
-```bash
-cp frontend/assets/model/model.tflite backend/models/
-cp frontend/assets/model/class_indices.json backend/models/plant-disease-model/
-```
-
-### Issue: Flutter "http package not found"
-
-**Solution:**
-```bash
-cd frontend
-flutter pub get
 flutter clean
 flutter pub get
+flutter run
 ```
 
----
-
-## 🧪 Testing
-
-### Test Python Service
+### Missing model file
 ```bash
-curl http://localhost:5000/health
-# Expected: {"status": "healthy", "model": "loaded"}
+# Copy from frontend assets to backend models
+cp frontend/assets/model/model.tflite backend/models/model.tflite
 ```
-
-### Test Node.js Backend
-```bash
-curl http://localhost:3000/api/health
-# Expected: Service status JSON
-```
-
-### Test Full Pipeline
-Use the Flutter app to:
-1. Select a crop (e.g., "Tomato")
-2. Capture/upload a leaf image
-3. View diagnosis results
 
 ---
 
 ## 📝 Development Commands
 
 ### Backend
-
 ```bash
-# Development mode (watch for changes)
-npm run start:dev
-
-# Production build
-npm run build
-npm run start:prod
-
-# Run tests
-npm test
+npm run start:dev    # watch mode
+npm run build        # production build
+npm test             # unit tests
 ```
 
 ### Frontend
-
 ```bash
-# Run on specific device
-flutter run -d <device-id>
-
-# Build for production
-flutter build apk          # Android
-flutter build ios          # iOS
-flutter build web          # Web
-
-# Analyze code
-flutter analyze
+flutter run                  # run on connected device
+flutter run -d chrome        # web
+flutter analyze              # lint
+flutter build apk            # Android release
+flutter build ios            # iOS release
+flutter build web            # Web release
 ```
 
 ---
 
-## 🔍 Implementation Details
+## 🚀 Quick Start (TL;DR)
 
-### Why Microservice Architecture?
-
-The `.tflite` model format is designed for mobile/edge devices and **cannot run directly in Node.js** due to browser-specific dependencies. We tried several approaches:
-
-**❌ Failed Approaches:**
-1. **Browser Global Polyfills** - TFLite requires `self`, `window`, `document`, `navigator` globals
-2. **@tensorflow/tfjs-tflite** - Browser-only package, not compatible with Node.js
-3. **Direct TFLite→TFJS Conversion** - `tensorflowjs_converter` had dependency resolution issues
-
-**✅ Solution: Python Microservice**
-
-We created a lightweight Flask service that:
-- Runs the `.tflite` model using Python's native TensorFlow Lite interpreter
-- Exposes simple HTTP endpoints (`/health`, `/predict`)
-- Integrates seamlessly with the Node.js backend
-
-### Benefits of This Approach
-
-1. **Zero Conversion Overhead** - Use `.tflite` file directly, no format conversion needed
-2. **Native TFLite Support** - Python has first-class TensorFlow Lite support
-3. **Separation of Concerns** - ML inference isolated in dedicated service
-4. **Scalability** - Python service can be scaled independently
-5. **Flexibility** - Easy to add GPU acceleration or swap models
-6. **No Polyfills** - Avoids complex browser dependency workarounds
-
-### TypeScript Errors Fixed
-
-During implementation, we resolved two critical TypeScript errors:
-
-**Error 1:** `Cannot find module '@tensorflow/tfjs-node'`
-- **Fix:** Removed the import, switched to HTTP-based microservice architecture
-
-**Error 2:** `Object is possibly 'null'`
-- **Fix:** Added null safety check: `if (this.model) { this.model.predict(...) }`
-
-### Files Created
-
-**Backend:**
-- `tflite_service.py` - Flask microservice for TFLite inference
-- `tflite_service_config.json` - Configuration (model path, port, shapes)
-- `inspect_model.py` - Utility to inspect model metadata
-- `convert_model.py` - Model conversion utilities (reference)
-
-**Frontend:**
-- Updated `ai_model_service.dart` to call backend API instead of local TFLite
-- Added HTTP dependencies to `pubspec.yaml`
-
----
-
-## 📊 Model Conversion Notes
-
-### Current Setup (No Conversion Needed)
-
-The `.tflite` model runs directly in the Python microservice - **no conversion required**.
-
-### If You Need to Convert Models
-
-If you want to use a different model format or convert TFLite to TensorFlow.js:
-
-**Inspect Your Model:**
 ```bash
-cd backend
-python inspect_model.py
+# Clone
+git clone https://github.com/RoshJ-17/Green-Hulk.git
+cd Green-Hulk
+
+# Dependencies
+cd backend && npm install && pip install tensorflow flask flask-cors numpy
+cd ../frontend && flutter pub get && cd ..
+
+# Run (3 terminals)
+# T1:  cd backend && python tflite_service.py
+# T2:  cd backend && npm run start:dev
+# T3:  cd frontend && flutter run
 ```
-
-This generates `models/model_info.json` with input/output shapes.
-
-**Convert TFLite to TFJS (Optional):**
-```bash
-# Install converter
-pip install tensorflowjs
-
-# Convert
-tensorflowjs_converter \
-  --input_format=tf_lite \
-  --output_format=tfjs_graph_model \
-  ./models/model.tflite \
-  ./models/tfjs_model
-```
-
-**Note:** Conversion is **not required** for the current architecture. The Python service handles `.tflite` natively.
-
----
-
-## 🎯 Model Information
-
-- **Format:** TensorFlow Lite (`.tflite`)
-- **Input Shape:** `[1, 224, 224, 3]` (RGB image, normalized 0-1)
-- **Output Shape:** `[1, 38]` (probability distribution over 38 disease classes)
-- **Classes:** See `backend/models/plant-disease-model/class_indices.json`
 
 ---
 
@@ -524,26 +413,3 @@ tensorflowjs_converter \
 
 MIT License
 
----
-
-## 🚀 Quick Start (TL;DR)
-
-```bash
-# 1. Clone & setup
-git clone https://github.com/RoshJ-17/Green-Hulk.git
-cd Green-Hulk
-
-# 2. Install dependencies
-cd backend && npm install && pip install tensorflow flask flask-cors && cd ..
-cd frontend && flutter pub get && cd ..
-
-# 3. Run services (3 separate terminals)
-# Terminal 1:
-cd backend && python tflite_service.py
-
-# Terminal 2:
-cd backend && npm run start:dev
-
-# Terminal 3:
-cd frontend && flutter run
-```
