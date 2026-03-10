@@ -43,11 +43,11 @@ class AuthService {
         return otp ?? 'sent'; // 'sent' = SMS delivered, no code in response
       }
 
-      debugPrint('AuthService: OTP endpoint not available — using mock mode');
-      return 'mock'; // mock fallback
+      debugPrint('AuthService: sendOtp failed with status ${response.statusCode}');
+      return null;
     } catch (e) {
-      debugPrint('AuthService: sendOtp error — $e (falling back to mock)');
-      return 'mock';
+      debugPrint('AuthService: sendOtp error — $e');
+      return null;
     }
   }
 
@@ -77,19 +77,10 @@ class AuthService {
         return data;
       }
 
-      // ── Mock fallback ──────────────────────────────────────────────────
-      // TODO: Remove mock once backend OTP endpoint is live.
-      debugPrint('AuthService: Using mock OTP verification (accepts any code)');
-      if (otp.length == 6) {
-        const mockToken = 'mock_token_replace_with_real';
-        return {'verified': true, 'accessToken': mockToken};
-      }
+      debugPrint('AuthService: verifyOtp failed with status ${response.statusCode} — ${response.body}');
       return null;
     } catch (e) {
-      debugPrint('AuthService: verifyOtp error — $e (falling back to mock)');
-      if (otp.length == 6) {
-        return {'verified': true};
-      }
+      debugPrint('AuthService: verifyOtp error — $e');
       return null;
     }
   }
