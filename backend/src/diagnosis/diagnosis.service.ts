@@ -97,7 +97,12 @@ export class DiagnosisService {
       }
 
       // Step 6: Get top prediction
-      const maxIndex = this.getMaxIndex(probabilities);
+      const topIndex = this.getMaxIndex(probabilities);
+      const maxIndex = this.cropValidator.resolveBestIndexForSelectedCrop(
+        selectedCrop,
+        labels,
+        probabilities,
+      );
       const confidence = probabilities[maxIndex];
 
       // Log top 3 predictions for debugging
@@ -113,6 +118,12 @@ export class DiagnosisService {
       this.logger.debug(
         `Top prediction: index ${maxIndex}, confidence ${(confidence * 100).toFixed(2)}%`,
       );
+
+      if (maxIndex !== topIndex) {
+        this.logger.debug(
+          `Adjusted prediction to selected crop candidate: ${labels[maxIndex]} (${(confidence * 100).toFixed(2)}%)`,
+        );
+      }
 
       // Step 7: Validate prediction vs selected crop
       const validation = this.cropValidator.validatePrediction(

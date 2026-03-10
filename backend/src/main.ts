@@ -8,12 +8,38 @@ import { existsSync } from "fs";
 
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // abortOnError: false — app continues starting even if a module (e.g. TypeORM/DB)
+  // fails to initialise. DB-dependent endpoints will 503; diagnosis still works.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    abortOnError: false,
+  });
 
-  // Enable CORS for mobile clients
+  // Enable CORS for mobile + web clients.
+  //
+  // Problem: Flutter web dev server runs on a random port (e.g. localhost:52419).
+  // A static allow-list can never cover every such port, so we use a function
+  // that accepts ANY localhost / 127.0.0.1 origin in development and restricts
+  // to an explicit FRONTEND_URL list in production.
+  const isDev = (process.env.NODE_ENV ?? 'development') !== 'production';
+  const explicitOrigins = (process.env.FRONTEND_URL ?? '')
+    .split(',').map((o) => o.trim()).filter(Boolean);
+
   app.enableCors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow same-origin requests and non-browser clients (mobile / curl / Postman)
+      if (!origin) return callback(null, true);
+
+      // In dev: allow all localhost / 127.0.0.1 origins regardless of port
+      if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+
+      // In production (or non-localhost origins): check explicit allow-list
+      if (explicitOrigins.includes(origin)) return callback(null, true);
+
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 

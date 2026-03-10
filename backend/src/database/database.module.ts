@@ -24,7 +24,7 @@ import { User } from "./entities/user.entity";
             await ds.initialize();
           } catch (err: any) {
             console.error("\n⚠️  [Database] PostgreSQL unavailable: " + err.message);
-            console.warn("⚠️  [Database] Running without DB — /auth/send-otp still works.\n");
+            console.warn("⚠️  [Database] Running without DB — scan history and auth disabled.\n");
           }
           return ds;
         };
@@ -38,7 +38,9 @@ import { User } from "./entities/user.entity";
             ssl: { rejectUnauthorized: false },
             entities,
             synchronize: true,
-            retryAttempts: 0,
+            retryAttempts: 1,   // must be > 0 or NestJS TypeORM ignores the value
+            retryDelay: 500,
+            connectTimeoutMS: 3000,
             dataSourceFactory,
           };
         }
@@ -52,7 +54,9 @@ import { User } from "./entities/user.entity";
           database: configService.get<string>("DB_NAME") || "green_hulk",
           entities,
           synchronize: true,
-          retryAttempts: 0,
+          retryAttempts: 1,   // must be > 0 or NestJS TypeORM ignores the value
+          retryDelay: 500,
+          connectTimeoutMS: 3000,
           dataSourceFactory,
         };
       },

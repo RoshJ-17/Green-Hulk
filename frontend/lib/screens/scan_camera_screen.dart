@@ -16,6 +16,7 @@ import '../services/camera_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/history_service.dart';
 import '../services/pending_upload_service.dart';
+import '../services/video_scan_service.dart';
 
 class ScanCameraScreen extends StatefulWidget {
   /// Pass the English crop name (e.g. "Tomato") for a single-crop scan,
@@ -43,6 +44,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
 
   /// Live blur warning shown while the user is framing the shot.
   bool _blurWarning  = false;
+
+  // Video scan state (US2.4)
+  bool _isVideoScanning = false;
+  String _videoStatus = '';
 
   late AnimationController _pulseController;
   late Animation<double>   _pulseAnimation;
@@ -405,6 +410,46 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     }
   }
 
+  // ── Video multi-capture scan (US2.4) ───────────────────────────────────
+  Future<void> _startVideoScan() async {
+    if (controller == null || _initFuture == null || isProcessing || _isVideoScanning) return;
+
+    setState(() {
+      _isVideoScanning = true;
+      _videoStatus = 'Starting\u2026';
+    });
+
+    try {
+      await _initFuture;
+      final result = await VideoScanService.rapidCaptureAndAnalyze(
+        controller: controller!,
+        cropName: widget.cropName,
+        withHeatmap: heatmapOn,
+        onStatus: (status) {
+          if (mounted) setState(() => _videoStatus = status);
+        },
+      );
+      HistoryService.addResult(result);
+
+      if (!mounted) return;
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TreatmentScreen(result: result),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isVideoScanning = false;
+          _videoStatus = '';
+        });
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Video scan error: $e')));
+      }
+    }
+  }
+
   // ── Gallery ──────────────────────────────────────────────────────────────
 
   Future<void> pickFromGallery() async {
@@ -699,6 +744,36 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             ),
           ),
 
+          // Video scan status overlay (US2.4)
+          if (_isVideoScanning)
+            Positioned(
+              bottom: 150,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.orange, strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(_videoStatus,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Bottom controls
           Positioned(
             bottom: 40,
@@ -716,6 +791,15 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                           ? Colors.red
                           : Colors.blue.withValues(alpha: 0.8),
                       onTap: toggleVoiceGuide,
+                    ),
+
+                    /// VIDEO SCAN BUTTON (US2.4)
+                    _buildCircleButton(
+                      icon: _isVideoScanning ? Icons.hourglass_top : Icons.videocam,
+                      color: _isVideoScanning
+                          ? Colors.orange
+                          : Colors.red.withValues(alpha: 0.8),
+                      onTap: _startVideoScan,
                     ),
 
                     /// CAPTURE BUTTON

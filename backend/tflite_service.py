@@ -13,12 +13,18 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+# Resolve paths relative to this file so the service can be started
+# from any working directory (e.g. repo root, Docker workdir, etc.)
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Load configuration
-with open('tflite_service_config.json', 'r') as f:
+_config_path = os.path.join(_DIR, 'tflite_service_config.json')
+with open(_config_path, 'r') as f:
     config = json.load(f)
 
-# Load TFLite model
-interpreter = tf.lite.Interpreter(model_path=config['modelPath'])
+# Load TFLite model — resolve modelPath relative to this file's directory
+_model_path = os.path.join(_DIR, config['modelPath'])
+interpreter = tf.lite.Interpreter(model_path=_model_path)
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()

@@ -13,6 +13,10 @@ import '../services/audio_service.dart';
 import '../services/treatment_api_service.dart';
 import '../services/app_state.dart';
 import '../services/localization_service.dart';
+import '../widgets/weather_advisory_card.dart';
+import '../widgets/medicine_calculator_widget.dart';
+import '../widgets/chemical_safety_widget.dart';
+import '../widgets/prevention_section_widget.dart';
 
 class TreatmentScreen extends StatefulWidget {
   final ScanResult result;
@@ -495,8 +499,11 @@ Method:    ${treatment['name']}
         ? _selectedOrganicTreatment
         : _selectedChemicalTreatment;
 
-    return Column(
+    return ListView(
       children: [
+        // Weather Advisory (US3.3)
+        const WeatherAdvisoryCard(),
+
         _buildOrganicToggle(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -516,13 +523,18 @@ Method:    ${treatment['name']}
             ],
           ),
         ),
-        Expanded(
-          child: treatment == null
-              ? _buildEmptyState(
-                  "No ${showOrganicTreatment ? 'organic' : 'chemical'} treatments found.",
-                )
-              : _buildStepsList(treatment),
-        ),
+        if (treatment == null)
+          _buildEmptyState(
+            "No ${showOrganicTreatment ? 'organic' : 'chemical'} treatments found.",
+          )
+        else
+          _buildStepsInline(treatment),
+
+        // Chemical-only: Medicine Calculator (US3.4) & Safety (US3.5)
+        if (!showOrganicTreatment) ...[  
+          MedicineCalculatorWidget(chemicalTreatment: _selectedChemicalTreatment),
+          ChemicalSafetyWidget(chemicalTreatment: _selectedChemicalTreatment),
+        ],
       ],
     );
   }
@@ -574,13 +586,16 @@ Method:    ${treatment['name']}
     );
   }
 
-  Widget _buildStepsList(Map<String, dynamic> treatment) {
+  /// Non-scrollable inline version of steps (used inside the outer ListView)
+  Widget _buildStepsInline(Map<String, dynamic> treatment) {
     final steps = treatment['steps'] as List<dynamic>? ?? [];
     final safety = treatment['safety_warnings'] as List<dynamic>? ?? [];
 
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         Text(
           treatment['name'] ?? "Recommended Actions",
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -670,29 +685,21 @@ Method:    ${treatment['name']}
           ),
         ],
       ],
+      ),
     );
   }
 
+  // Prevention Tab (US3.6 — enhanced)
   Widget _buildPreventionTab() {
-    final prevention = _diseaseData?['prevention'] as List? ?? [];
-    if (prevention.isEmpty) {
-      return _buildEmptyState("No specific prevention tips found.");
+    if (!result.hasDisease) {
+      return _buildHealthyState();
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: prevention.length,
-      itemBuilder: (context, i) {
-        final item = prevention[i];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: const Icon(Icons.shield, color: Colors.blue),
-            title: Text(item['action']),
-            subtitle: Text("Priority: ${item['importance'] ?? 'Normal'}"),
-          ),
-        );
-      },
+    final prevention = _diseaseData?['prevention'] as List? ?? [];
+    return PreventionSectionWidget(
+      cropName: result.cropName,
+      diseaseName: result.diseaseName,
+      apiPrevention: prevention,
     );
   }
 

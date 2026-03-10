@@ -2,13 +2,72 @@ import { Injectable } from "@nestjs/common";
 import { SupportedClassesService } from "./supported-classes.service";
 import { PredictionValidatorService } from "./prediction-validator.service";
 import { ValidationResult } from "@common/types/diagnosis-result.types";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class CropValidatorService {
+  private readonly LOW_CONFIDENCE_THRESHOLD: number;
+
   constructor(
     private readonly supportedClasses: SupportedClassesService,
     private readonly predictionValidator: PredictionValidatorService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Real-world field images are often noisier than benchmark data.
+    // 0.35 avoids over-rejecting valid scans while still filtering weak guesses.
+    this.LOW_CONFIDENCE_THRESHOLD =
+      this.configService.get<number>("CONFIDENCE_THRESHOLD") || 0.35;
+  }
+
+  /**
+   * Pick a selected-crop candidate when top-1 belongs to a different crop,
+   * but the selected crop is still very close in probability.
+   */
+  resolveBestIndexForSelectedCrop(
+    selectedCrop: string,
+    labels: string[],
+    probabilities: number[],
+  ): number {
+    const topIndex = probabilities.indexOf(Math.max(...probabilities));
+
+    if (selectedCrop.toLowerCase() === "any") {
+      return topIndex;
+    }
+
+    const topLabel = labels[topIndex];
+    const topCrop = this.extractCropName(topLabel);
+    const normalizedSelected = this.supportedClasses.normalizeCropName(selectedCrop);
+    const normalizedTop = this.supportedClasses.normalizeCropName(topCrop);
+
+    // Already matching selected crop.
+    if (normalizedSelected === normalizedTop) {
+      return topIndex;
+    }
+
+    // Find best class inside selected crop.
+    let selectedBestIndex = -1;
+    let selectedBestProb = -1;
+
+    for (let i = 0; i < labels.length; i++) {
+      const labelCrop = this.extractCropName(labels[i]);
+      const normalizedLabelCrop = this.supportedClasses.normalizeCropName(labelCrop);
+      if (normalizedLabelCrop === normalizedSelected && probabilities[i] > selectedBestProb) {
+        selectedBestProb = probabilities[i];
+        selectedBestIndex = i;
+      }
+    }
+
+    if (selectedBestIndex === -1) {
+      return topIndex;
+    }
+
+    const topProb = probabilities[topIndex];
+    const closeAbsoluteGap = topProb - selectedBestProb <= 0.08;
+    const closeRelativeGap = selectedBestProb >= topProb * 0.8;
+
+    // If selected crop is competitively close, prefer it to avoid false wrong-crop rejects.
+    return closeAbsoluteGap || closeRelativeGap ? selectedBestIndex : topIndex;
+  }
 
   validatePrediction(
     selectedCrop: string,
@@ -45,7 +104,7 @@ export class CropValidatorService {
     }
 
     // Check 2: Low quality/confidence
-    if (confidence < 0.5) {
+    if (confidence < this.LOW_CONFIDENCE_THRESHOLD) {
       return {
         type: "lowQuality",
         message:

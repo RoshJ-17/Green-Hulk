@@ -58,13 +58,8 @@ export class TreatmentsService {
   private treatmentsCache: Map<string, DiseaseData> = new Map();
 
   constructor() {
-    // In development: __dirname = backend/dist/treatments
-    // We need: backend/src/treatments/data/treatments.json
-    // In production after build: dist/treatments should have the copied JSON
-
-    // In production (dist/): __dirname = /app/dist/treatments
-    // treatments.json is copied to /app/dist/treatments/data/treatments.json by Dockerfile
-    // In development: __dirname = src/treatments, JSON lives right alongside it
+    // Primary path: dist/treatments/data/treatments.json (production / after build)
+    // Fallback path: src/treatments/data/treatments.json (dev watch mode — JSON not copied to dist)
     this.treatmentsPath = path.join(__dirname, "data", "treatments.json");
 
     this.loadTreatments();
@@ -75,8 +70,17 @@ export class TreatmentsService {
    * Task 3.1.1: Treatment JSON database
    */
   private async loadTreatments(): Promise<void> {
+    // Resolve path: try dist location first, fall back to src location for dev
+    let resolvedPath = this.treatmentsPath;
     try {
-      const fileContent = await fs.readFile(this.treatmentsPath, "utf-8");
+      await fs.access(resolvedPath);
+    } catch {
+      // dist path doesn't exist — fall back two levels up to reach src/
+      resolvedPath = path.join(__dirname, "..", "..", "src", "treatments", "data", "treatments.json");
+    }
+
+    try {
+      const fileContent = await fs.readFile(resolvedPath, "utf-8");
       const treatments = JSON.parse(fileContent);
 
       // Cache all disease treatments

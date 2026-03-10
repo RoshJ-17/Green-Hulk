@@ -1,15 +1,20 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class ModelLoaderService implements OnModuleInit {
   private readonly logger = new Logger(ModelLoaderService.name);
   private isLoaded = false;
-  private readonly TFLITE_SERVICE_URL = "http://localhost:5000";
+  private readonly TFLITE_SERVICE_URL: string;
 
   private readonly EXPECTED_INPUT_SIZE = 224;
   private readonly EXPECTED_OUTPUT_CLASSES = 38;
 
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {
+    this.TFLITE_SERVICE_URL =
+      this.configService.get<string>('TFLITE_SERVICE_URL') ??
+      'http://localhost:5000';
+  }
 
   async onModuleInit() {
     this.logger.log("Initializing model loader...");
