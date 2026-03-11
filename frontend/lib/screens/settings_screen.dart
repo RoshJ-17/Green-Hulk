@@ -121,61 +121,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
 
                     // ── Profile Section ──────────────────────────────────
-                    _sectionTitle('Profile'),
-                    const SizedBox(height: 10),
-                    _buildProfileCard(isSession),
+                    _buildProfileSection(isSession),
 
                     const SizedBox(height: 24),
 
                     // ── Language Section ─────────────────────────────────
-                    _sectionTitle('Language'),
-                    const SizedBox(height: 10),
-
-                    // Current language tile
-                    _buildTile(
-                      icon: Icons.language,
-                      title: 'App Language',
-                      subtitle: '${currentLang.emoji}  ${currentLang.name}',
-                      trailing: Icon(
-                        _showLanguagePicker
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: AppTheme.primaryGreen,
-                      ),
-                      onTap: () =>
-                          setState(() => _showLanguagePicker = !_showLanguagePicker),
-                    ),
-
-                    if (_showLanguagePicker)
-                      _buildLanguagePicker(currentLang.code),
+                    _buildLanguageSection(currentLang),
 
                     const SizedBox(height: 24),
 
                     // ── App Section ──────────────────────────────────────
-                    _sectionTitle('App'),
-                    const SizedBox(height: 10),
-
-                    _buildTile(
-                      icon: Icons.info_outline,
-                      title: 'About CropCare',
-                      subtitle: 'Version 1.0.0 • AI Crop Disease Diagnosis',
-                      onTap: () => _showAboutDialog(context),
-                    ),
+                    _buildAppSection(context),
 
                     const SizedBox(height: 24),
 
                     // ── Logout ───────────────────────────────────────────
                     if (isSession) ...[
-                      _sectionTitle('Account'),
-                      const SizedBox(height: 10),
-                      _buildTile(
-                        icon: Icons.logout,
-                        title: 'Logout',
-                        subtitle: 'Sign out of your account',
-                        iconColor: Colors.red,
-                        titleColor: Colors.red,
-                        onTap: _logout,
-                      ),
+                      _buildAccountSection(),
                       const SizedBox(height: 24),
                     ],
 
@@ -193,6 +155,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─────────────────────────────────────────────────────────────────────────
   // Sub-widgets
   // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildProfileSection(bool isLoggedIn) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Profile'),
+        const SizedBox(height: 10),
+        _buildProfileCard(isLoggedIn),
+      ],
+    );
+  }
+
+  Widget _buildLanguageSection(_LangItem currentLang) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Language'),
+        const SizedBox(height: 10),
+        _buildTile(
+          icon: Icons.language,
+          title: 'App Language',
+          subtitle: '${currentLang.emoji}  ${currentLang.name}',
+          trailing: Icon(
+            _showLanguagePicker
+                ? Icons.keyboard_arrow_up
+                : Icons.keyboard_arrow_down,
+            color: AppTheme.primaryGreen,
+          ),
+          onTap: () =>
+              setState(() => _showLanguagePicker = !_showLanguagePicker),
+        ),
+        if (_showLanguagePicker) _buildLanguagePicker(currentLang.code),
+      ],
+    );
+  }
+
+  Widget _buildAppSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('App'),
+        const SizedBox(height: 10),
+        _buildTile(
+          icon: Icons.info_outline,
+          title: 'About CropCare',
+          subtitle: 'Version 1.0.0 • AI Crop Disease Diagnosis',
+          onTap: () => _showAboutDialog(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Account'),
+        const SizedBox(height: 10),
+        _buildTile(
+          icon: Icons.logout,
+          title: 'Logout',
+          subtitle: 'Sign out of your account',
+          iconColor: Colors.red,
+          titleColor: Colors.red,
+          onTap: _logout,
+        ),
+      ],
+    );
+  }
 
   Widget _buildHeader() {
     return Container(
