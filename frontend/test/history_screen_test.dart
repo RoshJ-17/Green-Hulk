@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sample_app_1/screens/history_screen.dart';
 import 'package:sample_app_1/services/history_service.dart';
 import 'package:sample_app_1/models/scan_result.dart';
+import 'helpers/test_helper.dart';
 
 void main() {
   setUp(() {
@@ -12,14 +13,12 @@ void main() {
   testWidgets('Shows empty state when no history exists',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
-      ),
+      await wrapWithProviders(const HistoryScreen()),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.text('No scan history yet'), findsOneWidget);
+    expect(find.text('No scans yet.'), findsOneWidget);
     expect(find.textContaining('No scans yet'), findsOneWidget);
   });
 
@@ -37,14 +36,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
-      ),
+      await wrapWithProviders(const HistoryScreen()),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Tomato - Early Blight'), findsOneWidget);
+    expect(find.text('Tomato'), findsOneWidget);
+    expect(find.text('Early Blight'), findsOneWidget);
   });
 
   testWidgets('Delete dialog appears when swiping item',
@@ -60,9 +58,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
-      ),
+      await wrapWithProviders(const HistoryScreen()),
     );
 
     await tester.pumpAndSettle();
@@ -89,9 +85,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
-      ),
+      await wrapWithProviders(const HistoryScreen()),
     );
 
     await tester.pumpAndSettle();
@@ -105,6 +99,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now empty state should appear
-    expect(find.text('No scan history yet'), findsOneWidget);
+    expect(find.text('No scans yet.'), findsOneWidget);
   });
 }
