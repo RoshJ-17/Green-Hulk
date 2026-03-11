@@ -1,0 +1,21 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "setupFilesAfterEnv": ["<rootDir>/jest-setup.ts"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@ml/(.*)$": "<rootDir>/../src/ml/$1",
+    "^@image/(.*)$": "<rootDir>/../src/image/$1",
+    "^@validators/(.*)$": "<rootDir>/../src/validators/$1",
+    "^@database/(.*)$": "<rootDir>/../src/database/$1",
+    "^@common/(.*)$": "<rootDir>/../src/common/$1",
+    "^@api/(.*)$": "<rootDir>/../src/api/$1",
+    "^@diagnosis/(.*)$": "<rootDir>/../src/diagnosis/$1",
+    "^@localization/(.*)$": "<rootDir>/../src/localization/$1",
+    "^@treatments/(.*)$": "<rootDir>/../src/treatments/$1"
+  }
+}

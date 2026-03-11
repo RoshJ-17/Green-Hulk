@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sample_app_1/screens/crop_selection_screen.dart';
+import 'helpers/test_helper.dart';
 
 void main() {
   testWidgets('CropSelectionScreen renders UI correctly',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: CropSelectionScreen(),
-      ),
+      await wrapWithProviders(const CropSelectionScreen()),
     );
 
     await tester.pumpAndSettle();
