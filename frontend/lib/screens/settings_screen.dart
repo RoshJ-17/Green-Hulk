@@ -146,15 +146,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() => _showLanguagePicker = !_showLanguagePicker),
                     ),
 
-                    // Inline language picker
-                    AnimatedCrossFade(
-                      duration: const Duration(milliseconds: 300),
-                      crossFadeState: _showLanguagePicker
-                          ? CrossFadeState.showFirst
-                          : CrossFadeState.showSecond,
-                      firstChild: _buildLanguagePicker(currentLang.code),
-                      secondChild: const SizedBox.shrink(),
-                    ),
+                    if (_showLanguagePicker)
+                      _buildLanguagePicker(currentLang.code),
 
                     const SizedBox(height: 24),
 
