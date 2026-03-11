@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="sample_app_1">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>sample_app_1</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Maps loaded async — failure is caught so it never crashes Flutter -->
+  <script>
+    window.__mapsLoadFailed = false;
+    (function() {
+      var script = document.createElement('script');
+      script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCmF9_Ui-z-G-1Aj6Q57KeJkOu1WndOSXc&loading=async';
+      script.async = true;
+      script.defer = true;
+      script.onerror = function() {
+        window.__mapsLoadFailed = true;
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
