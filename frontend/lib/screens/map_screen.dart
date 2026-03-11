@@ -1,17 +1,19 @@
 // lib/screens/map_screen.dart
-// Works on Chrome (web) AND Android/iOS via google_maps_flutter + google_maps_flutter_web
+// Uses flutter_map with OpenStreetMap — completely free, no API key required
 
 import 'dart:math';
-import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/app_state.dart';
 import '../services/localization_service.dart';
 import '../services/gemini_translation_service.dart';
+
+import 'package:location/location.dart' as loc;
+import '../services/weather_service.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────
 
@@ -33,7 +35,7 @@ class LocalShop {
   final String name, address, phone;
   final double lat, lng;
   final List<String> inventory;
-  const LocalShop({
+  LocalShop({
     required this.name, required this.address, required this.phone,
     required this.lat, required this.lng, required this.inventory,
   });
@@ -60,8 +62,8 @@ class DiseaseWeeklyStat {
 
 // ── Mock Data ─────────────────────────────────────────────────────────────
 
-const _baseLat = 12.9716;
-const _baseLng = 77.5946;
+double _baseLat = 12.9716;
+double _baseLng = 77.5946;
 
 List<OutbreakPin> _mockPins() => [
   OutbreakPin(id: 'ob1', lat: _baseLat + 0.018, lng: _baseLng - 0.012,
@@ -87,12 +89,12 @@ List<OutbreakPin> _mockPins() => [
 ];
 
 List<LocalShop> _mockShops() => [
-  const LocalShop(
+  LocalShop(
     name: 'Green Fields Agro Store', address: '14 Market Road, Jayanagar',
     phone: '+91 80 2663 1120', lat: _baseLat + 0.011, lng: _baseLng + 0.008,
     inventory: ['Copper Fungicide 500g', 'Neem Oil Spray 1L', 'NPK Fertilizer 5kg', 'Bordeaux Mixture', 'Thiram 75% WP'],
   ),
-  const LocalShop(
+  LocalShop(
     name: 'Kisan Krishi Kendra', address: '7 Agricultural Hub, Banashankari',
     phone: '+91 80 2671 4488', lat: _baseLat - 0.014, lng: _baseLng - 0.009,
     inventory: ['Mancozeb 75% WP 250g', 'Propiconazole EC', 'Bio-Pesticide Trichoderma', 'Soil pH Tester Kit', 'Drip Irrigation Tape'],
@@ -123,128 +125,89 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   String _tipFilter = 'All';
   final _tipController = TextEditingController();
   String _writeTipCrop = 'Tomato';
-  GoogleMapController? _mapController;
-  bool _mapLoadError = false;
+  final MapController _mapController = MapController();
+  bool _mapReady = false;
 
-  BitmapDescriptor _verifiedMarker = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
-  BitmapDescriptor _pendingMarker  = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
-  BitmapDescriptor _shopMarker     = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+  // Location and Weather
+  loc.LocationData? _currentLoc;
+  WeatherAdvisory? _weatherAdvisory;
+  bool _locationDenied = false;
+  bool _locationPermissionGranted = false;
 
-  bool _iconsLoaded = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Only load once
-    if (!_iconsLoaded) {
-      _iconsLoaded = true;
-      _loadMarkerIcons();
-    }
-  }
-
-  Future<void> _loadMarkerIcons() async {
-    final verified = await _createMarkerBitmap(
-      bgColor: const Color(0xFFD32F2F),
-      icon: Icons.warning_amber_rounded,
-    );
-    final pending = await _createMarkerBitmap(
-      bgColor: const Color(0xFFF57C00),
-      icon: Icons.warning_amber_rounded,
-    );
-    final shop = await _createMarkerBitmap(
-      bgColor: const Color(0xFF2E7D32),
-      icon: Icons.store,
-    );
-    if (mounted) {
-      setState(() {
-        _verifiedMarker = verified;
-        _pendingMarker  = pending;
-        _shopMarker     = shop;
-      });
-    }
-  }
-
-  Future<BitmapDescriptor> _createMarkerBitmap({
-    required Color bgColor,
-    required IconData icon,
-  }) async {
-    const size = 80.0;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint()..color = bgColor;
-
-    // Draw pin circle
-    canvas.drawCircle(const Offset(size / 2, size / 2 - 6), size / 2 - 4, paint);
-
-    // Draw pin tail
-    final tailPath = Path()
-      ..moveTo(size / 2 - 10, size / 2 + 16)
-      ..lineTo(size / 2 + 10, size / 2 + 16)
-      ..lineTo(size / 2, size - 4)
-      ..close();
-    canvas.drawPath(tailPath, paint);
-
-    // White border
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    canvas.drawCircle(const Offset(size / 2, size / 2 - 6), size / 2 - 4, borderPaint);
-
-    // Draw icon inside
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-    tp.text = TextSpan(
-      text: String.fromCharCode(icon.codePoint),
-      style: TextStyle(
-        fontSize: 30,
-        fontFamily: icon.fontFamily,
-        package: icon.fontPackage,
-        color: Colors.white,
-      ),
-    );
-    tp.layout();
-    tp.paint(canvas, Offset((size - tp.width) / 2, (size - tp.height) / 2 - 10));
-
-    final picture = recorder.endRecording();
-    final img = await picture.toImage(size.toInt(), size.toInt());
-    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
-  }
-
-  Set<Marker> get _markers {
-    final markers = <Marker>{};
+  List<Marker> _buildMarkers() {
+    final markers = <Marker>[];
     for (final pin in _mockPins()) {
       markers.add(Marker(
-        markerId: MarkerId(pin.id),
-        position: LatLng(pin.lat, pin.lng),
-        icon: pin.isVerified ? _verifiedMarker : _pendingMarker,
-        infoWindow: InfoWindow(
-            title: '${pin.disease} on ${pin.crop}', snippet: '${pin.reports} reports'),
-        onTap: () => _showOutbreakBottomSheet(pin),
+        point: LatLng(pin.lat, pin.lng),
+        width: 44,
+        height: 44,
+        child: GestureDetector(
+          onTap: () => _showOutbreakBottomSheet(pin),
+          child: Tooltip(
+            message: '${pin.disease} on ${pin.crop} (${pin.reports} reports)',
+            child: Container(
+              decoration: BoxDecoration(
+                color: pin.isVerified ? const Color(0xFFD32F2F) : const Color(0xFFF57C00),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
       ));
     }
     for (final shop in _mockShops()) {
       markers.add(Marker(
-        markerId: MarkerId('shop_${shop.name}'),
-        position: LatLng(shop.lat, shop.lng),
-        icon: _shopMarker,
-        infoWindow: InfoWindow(title: shop.name, snippet: shop.address),
-        onTap: () => _showShopBottomSheet(shop),
+        point: LatLng(shop.lat, shop.lng),
+        width: 44,
+        height: 44,
+        child: GestureDetector(
+          onTap: () => _showShopBottomSheet(shop),
+          child: Tooltip(
+            message: shop.name,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF2E7D32),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+              ),
+              child: const Icon(Icons.store, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
+      ));
+    }
+    // Blue "my location" dot
+    if (_locationPermissionGranted) {
+      markers.add(Marker(
+        point: LatLng(_baseLat, _baseLng),
+        width: 22,
+        height: 22,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2.5),
+            boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.45), blurRadius: 8)],
+          ),
+        ),
       ));
     }
     return markers;
   }
 
-  Set<Circle> get _circles => {
-    Circle(
-      circleId: const CircleId('radius_5km'),
-      center: const LatLng(_baseLat, _baseLng),
+  List<CircleMarker> _buildCircles() => [
+    CircleMarker(
+      point: LatLng(_baseLat, _baseLng),
       radius: 5000,
-      strokeColor: Colors.blue.withValues(alpha: 0.4),
-      strokeWidth: 1,
-      fillColor: Colors.blue.withValues(alpha: 0.05),
+      useRadiusInMeter: true,
+      color: Colors.blue.withValues(alpha: 0.05),
+      borderStrokeWidth: 1.5,
+      borderColor: Colors.blue.withValues(alpha: 0.4),
     ),
-  };
+  ];
 
   final List<CommunityTip> _tips = [
     CommunityTip(id: 't1', authorBadge: 'Farmer #4821', crop: 'Tomato',
@@ -268,13 +231,112 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _initLocationAndWeather();
+  }
+
+  Future<void> _initLocationAndWeather() async {
+    try {
+      final location = loc.Location();
+
+      bool serviceEnabled = false;
+      try {
+        serviceEnabled = await location.serviceEnabled();
+      } catch (_) {}
+      if (!serviceEnabled) {
+        try {
+          serviceEnabled = await location.requestService();
+        } catch (_) {}
+        if (!serviceEnabled) {
+          if (!mounted) return;
+          setState(() => _locationDenied = true);
+          return;
+        }
+      }
+
+      loc.PermissionStatus permissionGranted = loc.PermissionStatus.denied;
+      try {
+        permissionGranted = await location.hasPermission();
+      } catch (_) {}
+      if (permissionGranted != loc.PermissionStatus.granted) {
+        try {
+          permissionGranted = await location.requestPermission();
+        } catch (_) {}
+        if (permissionGranted != loc.PermissionStatus.granted) {
+          if (!mounted) return;
+          setState(() => _locationDenied = true);
+          return;
+        }
+      }
+
+      // Delay briefly so Android doesn't kill us while activity recreates
+      // after a dangerous-permission grant on Android 12+.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+
+      loc.LocationData? locData;
+      try {
+        locData = await location.getLocation();
+      } catch (e) {
+        debugPrint('getLocation error: $e');
+      }
+
+      if (!mounted) return;
+      if (locData != null) {
+        final lat = locData.latitude;
+        final lng = locData.longitude;
+        // Validate that we received real coordinates (not null GPS returns)
+        if (lat == null || lng == null) {
+          debugPrint('GPS returned null lat/lng – using default');
+          setState(() => _locationDenied = true);
+          return;
+        }
+        setState(() {
+          _currentLoc = locData;
+          _baseLat = lat;
+          _baseLng = lng;
+          _locationDenied = false;
+          _locationPermissionGranted = true;
+        });
+
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (!mounted) return;
+
+        if (_mapReady) {
+          _mapController.move(LatLng(_baseLat, _baseLng), 13.5);
+        }
+
+        // Use local variables – avoids any risk of reading stale globals
+        WeatherAdvisory? weather;
+        try {
+          weather = await WeatherService.getSprayAdvisory(
+            latitude: lat,
+            longitude: lng,
+          );
+          debugPrint('Weather fetched for $lat,$lng → ${weather.locationName}, ${weather.locationRegion}');
+        } catch (e) {
+          debugPrint('Weather fetch error: $e');
+        }
+
+        if (!mounted) return;
+        if (weather != null && weather.condition != 'Unavailable') {
+          setState(() => _weatherAdvisory = weather);
+        }
+      } else {
+        setState(() => _locationDenied = true);
+        return;
+      }
+    } catch (e) {
+      debugPrint('_initLocationAndWeather error: $e');
+      if (!mounted) return;
+      setState(() => _locationDenied = true);
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _tipController.dispose();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -469,104 +531,28 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
 
   Widget _buildMapTab() {
     final appState = context.read<AppState>();
-    // Show setup instructions if map failed to load (invalid API key)
-    if (_mapLoadError && kIsWeb) {
-      return Stack(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.orange.shade200),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.map_outlined, size: 56, color: Colors.orange.shade400),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Google Maps API Key Required',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'To enable the map on web, add your Google Maps API key:',
-                          style: TextStyle(fontSize: 13, color: Colors.black54),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade900,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            'web/index.html\n<script src="...maps...key=YOUR_KEY">',
-                            style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontFamily: 'monospace'),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '1. Go to console.cloud.google.com\n2. Enable "Maps JavaScript API"\n3. Create API Key\n4. Replace YOUR_GOOGLE_MAPS_API_KEY in web/index.html',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.8),
-                          textAlign: TextAlign.left,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Post to Map — top right (still functional)
-          Positioned(
-            top: 12, right: 12,
-            child: ElevatedButton.icon(
-              onPressed: _showPostToMapDialog,
-              icon: const Icon(Icons.add_location_alt, size: 15),
-              label: Text(context.read<AppState>().tr('map_post_tip')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                minimumSize: Size.zero,
-                elevation: 3,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
     return Stack(
+      fit: StackFit.expand,
       children: [
-        GoogleMap(
-          initialCameraPosition: const CameraPosition(
-            target: LatLng(_baseLat, _baseLng),
-            zoom: 13.5,
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: LatLng(_baseLat, _baseLng),
+            initialZoom: 13.5,
+            onMapReady: () => setState(() => _mapReady = true),
           ),
-          onMapCreated: (c) {
-            _mapController = c;
-            // On web, if map loaded successfully, clear any previous error
-            if (_mapLoadError) setState(() => _mapLoadError = false);
-          },
-          markers: _markers,
-          circles: _circles,
-          myLocationEnabled: !kIsWeb,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          compassEnabled: true,
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.sample_app_1',
+            ),
+            CircleLayer(circles: _buildCircles()),
+            MarkerLayer(markers: _buildMarkers()),
+            const RichAttributionWidget(
+              attributions: [TextSourceAttribution('OpenStreetMap contributors')],
+              alignment: AttributionAlignment.bottomLeft,
+            ),
+          ],
         ),
         // Legend — top left
         Positioned(
@@ -618,11 +604,9 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             backgroundColor: Colors.white,
             elevation: 4,
             onPressed: () {
-              _mapController?.animateCamera(
-                CameraUpdate.newCameraPosition(
-                  const CameraPosition(target: LatLng(_baseLat, _baseLng), zoom: 14),
-                ),
-              );
+              if (_mapReady) {
+                _mapController.move(LatLng(_baseLat, _baseLng), 14.0);
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Centred on your location'), duration: Duration(seconds: 2)),
               );
@@ -630,6 +614,102 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             child: const Icon(Icons.my_location, color: AppTheme.primaryGreen),
           ),
         ),
+        
+        if (_locationDenied)
+          Positioned(
+            bottom: 100, left: 12, right: 80,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(8)),
+              child: const Text('Location access denied. Using default location.', style: TextStyle(color: Colors.red, fontSize: 12)),
+            )
+          ),
+
+        // Weather Overlay
+        if (_weatherAdvisory != null)
+          Positioned(
+            top: 120, right: 12,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 200),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(230),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _weatherAdvisory!.condition.toLowerCase().contains('rain') ? Icons.cloudy_snowing : Icons.wb_sunny,
+                    color: Colors.orange,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _weatherAdvisory!.locationName,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.primaryGreen),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (_weatherAdvisory!.locationRegion.isNotEmpty)
+                          Text(
+                            _weatherAdvisory!.locationRegion,
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        Text(
+                          '${_weatherAdvisory!.tempC.toStringAsFixed(0)}°C · ${_weatherAdvisory!.humidity}% RH',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Text(_weatherAdvisory!.condition, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                        if (_weatherAdvisory!.bestSprayHour != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.schedule, size: 11, color: AppTheme.primaryGreen),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Spray: ${_weatherAdvisory!.bestSprayHour}',
+                                style: const TextStyle(fontSize: 10, color: AppTheme.primaryGreen, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (_weatherAdvisory!.windWarning != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.air, size: 11, color: Colors.orange),
+                              const SizedBox(width: 3),
+                              Flexible(child: Text(_weatherAdvisory!.windWarning!, style: const TextStyle(fontSize: 10, color: Colors.orange))),
+                            ],
+                          ),
+                        ],
+                        if (_weatherAdvisory!.rainWarning != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.water_drop, size: 11, color: Colors.blue),
+                              const SizedBox(width: 3),
+                              Flexible(child: Text(_weatherAdvisory!.rainWarning!, style: const TextStyle(fontSize: 10, color: Colors.blue))),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -803,12 +883,28 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             ),
             child: Row(
               children: [
-                const Icon(Icons.gps_fixed, color: AppTheme.primaryGreen, size: 18),
+                Icon(
+                  _currentLoc != null ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  color: AppTheme.primaryGreen, size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    appState.tr('map_soil_gps_fetch'),
-                    style: const TextStyle(fontSize: 13, color: AppTheme.primaryGreen, fontWeight: FontWeight.w600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _currentLoc != null
+                            ? (_weatherAdvisory?.locationName ?? 'Location obtained')
+                            : appState.tr('map_soil_gps_fetch'),
+                        style: const TextStyle(fontSize: 13, color: AppTheme.primaryGreen, fontWeight: FontWeight.w600),
+                      ),
+                      if (_currentLoc != null)
+                        Text(
+                          '${_baseLat.toStringAsFixed(4)}°N, ${_baseLng.toStringAsFixed(4)}°E',
+                          style: TextStyle(fontSize: 11, color: AppTheme.primaryGreen.withValues(alpha: 0.7)),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -823,29 +919,48 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             ],
           )),
           const SizedBox(height: 12),
-          _card(appState.tr('map_disease_risk'), Icons.bug_report_outlined, Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('${appState.tr('map_risk_level')}: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.orange),
+          Builder(builder: (_) {
+            final w = _weatherAdvisory;
+            String riskLabel; Color riskColor; String riskDesc;
+            if (w != null) {
+              if (w.humidity > 75 && w.rainChancePct > 40 && w.tempC >= 10 && w.tempC <= 32) {
+                riskLabel = 'HIGH'; riskColor = Colors.red.shade700;
+                riskDesc = 'High humidity (${w.humidity}%) + ${w.rainChancePct.toStringAsFixed(0)}% rain chance — fungal spread risk is elevated. Apply preventive fungicide.';
+              } else if (w.humidity > 60 || w.rainChancePct > 25) {
+                riskLabel = 'MEDIUM'; riskColor = Colors.orange;
+                riskDesc = '${w.humidity}% humidity and ${w.tempC.toStringAsFixed(0)}°C may favour fungal activity. Monitor crops and scout for early symptoms.';
+              } else {
+                riskLabel = 'LOW'; riskColor = Colors.green.shade700;
+                riskDesc = 'Current conditions (${w.humidity}% humidity, ${w.tempC.toStringAsFixed(0)}°C) are not particularly favourable for disease spread.';
+              }
+            } else {
+              riskLabel = appState.tr('map_risk_medium').toUpperCase();
+              riskColor = Colors.orange;
+              riskDesc = appState.tr('map_soil_fungal_risk');
+            }
+            return _card(appState.tr('map_disease_risk'), Icons.bug_report_outlined, Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('${appState.tr('map_risk_level')}: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: riskColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: riskColor),
+                      ),
+                      child: Text(riskLabel, style: TextStyle(color: riskColor, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-                    child: Text(appState.tr('map_risk_medium').toUpperCase(), style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(appState.tr('map_soil_fungal_risk'),
-                  style: const TextStyle(fontSize: 13, height: 1.5)),
-            ],
-          )),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(riskDesc, style: const TextStyle(fontSize: 13, height: 1.5)),
+              ],
+            ));
+          }),
           const SizedBox(height: 12),
           _card(appState.tr('map_recommendation'), Icons.lightbulb_outline, Column(
             crossAxisAlignment: CrossAxisAlignment.start,

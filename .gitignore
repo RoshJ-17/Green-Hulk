@@ -12,6 +12,8 @@ backend/.env
 backend/deps.txt
 backend/data/*.db
 backend/data/*.sqlite
+backend/tsconfig.build.tsbuildinfo
+backend/**/*.tsbuildinfo
 
 # Frontend
 frontend/.dart_tool/
@@ -23,6 +25,12 @@ frontend/build/
 frontend/android/app/debug/
 frontend/android/app/profile/
 frontend/android/app/release/
+frontend/devices.txt
+frontend/flutter_log.txt
+
+# Java heap dumps
+*.hprof
+**/*.hprof
 
 # Python artifacts
 __pycache__/

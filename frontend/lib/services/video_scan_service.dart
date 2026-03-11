@@ -28,6 +28,7 @@ class VideoScanService {
     onStatus?.call('Analysing frames\u2026');
 
     final List<ScanResult> results = [];
+    WrongCropException? lastWrongCropException;
     for (int i = 0; i < captures.length; i++) {
       onStatus?.call('AI analysis ${i + 1}/3\u2026');
       try {
@@ -37,21 +38,22 @@ class VideoScanService {
           withHeatmap: withHeatmap && i == 0,
         );
         results.add(result);
+      } on WrongCropException catch (e) {
+        lastWrongCropException = e;
       } catch (e) {
         debugPrint('VideoScan: frame $i failed: $e');
       }
     }
 
     if (results.isEmpty) {
+      if (lastWrongCropException != null) {
+        throw lastWrongCropException;
+      }
       throw Exception(
           'All frames failed analysis. Try again with better lighting.');
     }
-
     return _majorityVote(results);
   }
-
-  /// Pick the disease that appears most frequently.
-  /// On tie, pick the one with highest confidence.
   static ScanResult _majorityVote(List<ScanResult> results) {
     final Map<String, List<ScanResult>> grouped = {};
     for (final r in results) {

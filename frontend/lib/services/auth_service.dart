@@ -174,9 +174,13 @@ class AuthService {
     final token = await getToken();
     if (token == null) return false;
     try {
+      // Some environments may return opaque (non-JWT) access tokens.
+      // In that case keep the session alive if a token is present.
+      final isLikelyJwt = token.split('.').length == 3;
+      if (!isLikelyJwt) return true;
       return !JwtDecoder.isExpired(token);
     } catch (e) {
-      return false;
+      return true;
     }
   }
 

@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/scan_result.dart';
+import '../theme/app_theme.dart';
 import '../screens/treatment_screen.dart';
 import '../services/ai_model_service.dart';
 import '../services/app_state.dart';
@@ -23,7 +24,11 @@ class ScanCameraScreen extends StatefulWidget {
   /// or "any" to let the AI detect the crop from the selected list.
   final String cropName;
 
-  const ScanCameraScreen({super.key, required this.cropName});
+  /// If non-null, the AI-predicted species must match one of these crops.
+  /// Pass null for unrestricted auto-detect mode.
+  final List<String>? selectedCrops;
+
+  const ScanCameraScreen({super.key, required this.cropName, this.selectedCrops});
 
   @override
   State<ScanCameraScreen> createState() => _ScanCameraScreenState();
@@ -178,6 +183,19 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     return score < _blurThreshold;
   }
 
+  /// Throws [WrongCropException] when the scan result's crop doesn't match
+  /// any of the user-selected crops. A no-op when selectedCrops is null/empty.
+  void _validateCropMatch(ScanResult r) {
+    final sel = widget.selectedCrops;
+    if (sel == null || sel.isEmpty) return;
+    final pred = r.cropName.toLowerCase();
+    final ok = sel.any((c) {
+      final cl = c.toLowerCase();
+      return cl == pred || cl.contains(pred) || pred.contains(cl);
+    });
+    if (!ok) throw WrongCropException(r.cropName, sel.join(' / '));
+  }
+
   // ── Capture pipeline ────────────────────────────────────────────────────
   Future<void> captureImage() async {
     if (controller == null || _initFuture == null || isProcessing) return;
@@ -214,21 +232,11 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           cropName:  widget.cropName,
           heatmap:   heatmapOn,
         );
-        final offlineResult = ScanResult(
-          cropName:    widget.cropName,
-          diseaseName: 'Offline Scan (Queued)',
-          confidence:  0.0,
-          imagePath:   xFile.path,
-          hasDisease:  true,
-        );
-        if (!mounted) return;
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.read<AppState>().tr('offline_cached')),
+          content: Text('Offline - Scan saved for sync'),
           backgroundColor: Colors.orange,
         ));
-        Navigator.pop(context, offlineResult);
-        return;
       }
 
       // ── 4. Analyse ─────────────────────────────────────────────────────
@@ -238,46 +246,111 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
         cropName:    widget.cropName,
         withHeatmap: heatmapOn,
       );
-      HistoryService.addResult(result);
+      _validateCropMatch(result);
 
       if (!mounted) return;
-      // Navigate directly to Treatment screen
+      // Navigate directly to Treatment screen (TreatmentScreen saves to history)
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => TreatmentScreen(result: result),
         ),
       );
-    } catch (e) {
-      if (mounted) setState(() => isProcessing = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      } on WrongCropException catch (e) {
+        if (mounted) setState(() => isProcessing = false);
+        if (!mounted) return;
+        _showWrongCropDialog(context, e);
+      } catch (e) {
+        if (mounted) setState(() => isProcessing = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
-  }
 
-  // ── Square-crop preview dialog ──────────────────────────────────────────
+    void _showWrongCropDialog(BuildContext context, WrongCropException e) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 26),
+              SizedBox(width: 10),
+              Text('Wrong Crop', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  children: [
+                    const TextSpan(text: 'Detected: '),
+                    TextSpan(
+                      text: e.predictedSpecies,
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text('Expected: ${e.selectedCrop}',
+                  style: const TextStyle(fontSize: 13, color: Colors.black54)),
+              const SizedBox(height: 10),
+              const Text(
+                'Scan the correct crop, or switch to auto-detect to identify any plant automatically.',
+                style: TextStyle(fontSize: 12, color: Colors.black45, height: 1.4),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.pop(ctx),
+              icon: const Icon(Icons.replay, size: 18),
+              label: const Text('Try Again'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ScanCameraScreen(cropName: 'any'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.auto_fix_high, size: 18),
+              label: const Text('Use Auto-Detect'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-  /// Crops the image to a centred square, shows a preview and waits for the
-  /// user to confirm ("Use this") or retake.
-  Future<bool> _showPreviewDialog(Uint8List rawBytes) async {
-    final squareBytes = await _squareCrop(rawBytes);
-    if (!mounted) return false;
-
-    return await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    context.read<AppState>().tr('preview'),
-                    style: const TextStyle(
+    Future<bool> _showPreviewDialog(Uint8List squareBytes) async { return await
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  context.read<AppState>().tr('preview'),
+                  style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -429,7 +502,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           if (mounted) setState(() => _videoStatus = status);
         },
       );
-      HistoryService.addResult(result);
+      _validateCropMatch(result);
 
       if (!mounted) return;
       await Navigator.pushReplacement(
@@ -438,15 +511,23 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           builder: (_) => TreatmentScreen(result: result),
         ),
       );
+    } on WrongCropException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isVideoScanning = false;
+          _videoStatus = '';
+        });
+        _showWrongCropDialog(context, e);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isVideoScanning = false;
           _videoStatus = '';
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Video scan error: $e')));
       }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Video scan error: $e')));
     }
   }
 
@@ -486,20 +567,24 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
         cropName:    widget.cropName,
         withHeatmap: heatmapOn,
       );
-      HistoryService.addResult(result);
+      _validateCropMatch(result);
       if (!mounted) return;
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => TreatmentScreen(result: result)),
       );
-    } catch (e) {
-      if (mounted) {
-        setState(() => isProcessing = false);
+      } on WrongCropException catch (e) {
+        if (mounted) {
+          setState(() => isProcessing = false);
+          _showWrongCropDialog(context, e);
+        }
+      } catch (e) {
+        if (mounted) setState(() => isProcessing = false);
+        if (!mounted) return;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
-  }
 
   // ── UI ───────────────────────────────────────────────────────────────────
   @override

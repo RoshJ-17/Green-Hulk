@@ -1,101 +1,211 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:image/image.dart' as img;
+import 'package:tflite_flutter/tflite_flutter.dart';
 import '../models/scan_result.dart';
-import '../config/api_config.dart';
 
-/// AI Model Service
-///
-/// Sends the captured leaf image to the backend for TFLite diagnosis.
-///
-/// Key improvements:
-///   • Resizes image to ≤ 800 px longest side before upload  → < 1 s round-trip
-///   • Applies adaptive gamma correction for dark images (client-side preview;
-///     backend also applies its own correction independently)
-///   • Supports heatmap=true query param to request Grad-CAM overlay
-///   • Parses severity as "Early Stage" | "Medium" | "Severe"
+class WrongCropException implements Exception {
+  final String predictedSpecies;
+  final String selectedCrop;
+  WrongCropException(this.predictedSpecies, this.selectedCrop);
+  @override
+  String toString() =>
+      'This looks like an $predictedSpecies leaf. Please scan an $selectedCrop leaf.';
+}
+
+/// AI Model Service (Local TFLite Inference)
 class AIModelService {
-  static String get _baseUrl => ApiConfig.apiUrl;
+  static Interpreter? _interpreter;
+  static List<String> _labels = [];
 
-  /// No initialization needed for API service
   static Future<bool> initialize() async {
-    return true;
+    if (isModelLoaded) return true;
+    try {
+      _interpreter = await Interpreter.fromAsset('assets/model/model.tflite');
+      
+      final labelsJson = await rootBundle.loadString('assets/model/class_indices.json');
+      final Map<String, dynamic> labelMap = json.decode(labelsJson);
+      _labels = List.generate(labelMap.length, (index) => '');
+      labelMap.forEach((key, value) {
+        _labels[value as int] = key;
+      });
+      debugPrint('AIModelService: Loaded ${_labels.length} labels and TFLite model.');
+      return true;
+    } catch (e) {
+      debugPrint('AIModelService: Error loading model: $e');
+      return false;
+    }
   }
 
-  /// Check if model is loaded (Always true for API)
-  static bool get isModelLoaded => true;
-
-  // ─── Public API ──────────────────────────────────────────────────────────
+  static bool get isModelLoaded => _interpreter != null && _labels.isNotEmpty;
 
   static Future<ScanResult> analyzeImage({
     required String imagePath,
     required String cropName,
     bool withHeatmap = false,
   }) async {
-    debugPrint('AIModelService: analysing "$cropName"  heatmap=$withHeatmap');
+    debugPrint('AIModelService: analysing "$cropName" locally');
+    if (!isModelLoaded) {
+      await initialize();
+    }
+    if (!isModelLoaded) {
+      throw Exception('Model failed to load');
+    }
+    
+    final payload = await compute(_preprocessAndValidate, imagePath);
+    if (payload == null) {
+      throw Exception("Could not process image");
+    }
 
-    // Optimise image on a background isolate
-    final Uint8List bytes = await compute(_optimiseInBackground, imagePath);
-
-    final url = Uri.parse(
-      '$_baseUrl/diagnose${withHeatmap ? '?heatmap=true' : ''}',
-    );
-    final request = http.MultipartRequest('POST', url)
-      ..fields['selectedCrop'] = cropName
-      ..files.add(http.MultipartFile.fromBytes(
-        'image',
-        bytes,
-        filename: 'leaf.jpg',
-        contentType: MediaType('image', 'jpeg'),
-      ));
-
-    debugPrint('AIModelService: uploading ${bytes.length} bytes → $url');
-
-    final streamed  = await request.send();
-    final response  = await http.Response.fromStream(streamed);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return _parseResponse(
-        json.decode(response.body) as Map<String, dynamic>,
-        cropName,
-        imagePath,
+    // Gate 1: reject non-leaf images before running inference
+    if (!(payload['hasPlant'] as bool)) {
+      throw Exception(
+        'No plant leaf detected. Point the camera directly at a leaf in good lighting.',
       );
     }
-    throw Exception('API ${response.statusCode}: ${response.body}');
-  }
 
-  // ─── Image optimisation (runs in background isolate) ─────────────────────
+    final tensor = payload['tensor'] as List<List<List<List<double>>>>;
+    final output = List.generate(1, (i) => List.filled(_labels.length, 0.0));
+    _interpreter!.run(tensor, output);
 
-  static Future<Uint8List> _optimiseInBackground(String path) async {
-    final raw = await XFile(path).readAsBytes();
-    img.Image? image = img.decodeImage(raw);
-    if (image == null) return raw;
-
-    // 1. Resize: longest side ≤ 800 px
-    const maxDim = 800;
-    if (image.width > maxDim || image.height > maxDim) {
-      image = image.width >= image.height
-          ? img.copyResize(image, width: maxDim,
-              interpolation: img.Interpolation.cubic)
-          : img.copyResize(image, height: maxDim,
-              interpolation: img.Interpolation.cubic);
+    final probs = output[0];
+    double top1 = -1.0, top2 = -1.0;
+    int top1Idx = -1;
+    for (int i = 0; i < probs.length; i++) {
+      if (probs[i] > top1) {
+        top2 = top1;
+        top1 = probs[i];
+        top1Idx = i;
+      } else if (probs[i] > top2) {
+        top2 = probs[i];
+      }
     }
 
-    // 2. Brightness boost for dark images
-    image = _adaptiveBrightness(image);
+    // Gate 2: low overall confidence  
+    if (top1 < 0.55) {
+      throw Exception(
+        'Could not identify the plant clearly (${(top1 * 100).toInt()}% confidence). '
+        'Ensure the leaf fills the frame in good lighting.',
+      );
+    }
 
-    return Uint8List.fromList(img.encodeJpg(image, quality: 85));
+    // Gate 3: model is ambiguous between two classes — likely not a real leaf
+    if ((top1 - top2) < 0.12 && top1 < 0.75) {
+      throw Exception(
+        'Result unclear (${(top1 * 100).toInt()}% vs ${(top2 * 100).toInt()}%). '
+        'Please retake the photo with the leaf clearly centred.',
+      );
+    }
+
+    final fullLabel = _labels[top1Idx];
+    final maxProb   = top1;
+
+    // Check wrong plant / leaf
+    final predictedSpeciesMatch = fullLabel.split('___').first;
+    // Format to normal text, e.g. "Cherry_(including_sour)" -> "Cherry including sour"
+    final predictedSpecies = predictedSpeciesMatch.replaceAll('_(', ' ').replaceAll('_', ' ').replaceAll(')', '').trim();
+    final actualCrop = cropName == 'any' ? predictedSpecies : cropName;
+    
+    // simple compare for matching species
+    if (cropName != 'any') {
+      final selectedFormatted = cropName.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+      final predictedFormatted = predictedSpeciesMatch.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+      if (!predictedFormatted.contains(selectedFormatted) && !selectedFormatted.contains(predictedFormatted)) {
+        throw WrongCropException(predictedSpecies, cropName);
+      }
+    }
+
+    // Convert disease name
+    final diseasePart = fullLabel.split('___').last.replaceAll('_', ' ');
+    final hasDisease = !diseasePart.toLowerCase().contains('healthy');
+    
+    return ScanResult(
+      cropName:    actualCrop,
+      diseaseName: hasDisease ? diseasePart : 'Healthy',
+      confidence:  maxProb,
+      imagePath:   imagePath,
+      hasDisease:  hasDisease,
+      severity:    hasDisease ? "Medium" : null,
+      fullLabel:   fullLabel,
+    );
   }
 
-  /// Adaptive gamma correction.
-  ///
-  ///   avg < 80   → gamma 0.55 (strong boost)
-  ///   avg < 120  → gamma 0.75 (moderate boost)
-  ///   otherwise  → no change
+  // Returns preprocessed 224×224 tensor AND a leaf-presence flag.
+  // Runs in a background isolate via compute().
+  static Future<Map<String, dynamic>?> _preprocessAndValidate(String path) async {
+    final raw = await XFile(path).readAsBytes();
+    img.Image? image = img.decodeImage(raw);
+    if (image == null) return null;
+
+    // 1. Resize to 224×224
+    image = img.copyResize(image, width: 224, height: 224, interpolation: img.Interpolation.cubic);
+
+    // 2. Check for plant-like colours BEFORE brightness adjustment
+    final hasPlant = _hasPlantLikeColors(image);
+
+    // 3. Brightness boost for dark images
+    image = _adaptiveBrightness(image);
+
+    // 4. Normalize into [1, 224, 224, 3] Float32 list  ([0, 1] range)
+    var input = List.generate(1, (i) => 
+                   List.generate(224, (j) => 
+                     List.generate(224, (k) => 
+                       List.generate(3, (l) => 0.0))));
+
+    for (int y = 0; y < 224; y++) {
+      for (int x = 0; x < 224; x++) {
+        final p = image.getPixel(x, y);
+        input[0][y][x][0] = p.r / 255.0;
+        input[0][y][x][1] = p.g / 255.0;
+        input[0][y][x][2] = p.b / 255.0;
+      }
+    }
+    return {'tensor': input, 'hasPlant': hasPlant};
+  }
+
+  /// Returns true when enough pixels have natural leaf/plant tones.
+  /// Accepts: fresh green, dark green, yellowed/chlorotic, brown/tan diseased.
+  /// Rejects: skin tones, clear sky, walls, metal surfaces.
+  static bool _hasPlantLikeColors(img.Image image) {
+    int plantPixels = 0;
+    final total = image.width * image.height;
+    for (int y = 0; y < image.height; y++) {
+      for (int x = 0; x < image.width; x++) {
+        final p = image.getPixel(x, y);
+        final r = p.r.toInt();
+        final g = p.g.toInt();
+        final b = p.b.toInt();
+
+        // Fresh green leaf
+        if (g > 80 && g > r * 0.85 && g > b * 0.85) {
+          plantPixels++;
+          continue;
+        }
+        // Dark / olive green leaf
+        if (g > 50 && g > r * 0.7 && g > b * 0.8 && r < 140) {
+          plantPixels++;
+          continue;
+        }
+        // Yellowed / chlorotic leaf (yellow-green)
+        if (r > 120 && g > 100 && b < 120 && g >= r * 0.6) {
+          plantPixels++;
+          continue;
+        }
+        // Brown / tan diseased leaf: r dominant but meaningful g, very low b
+        if (r > 90 && g > 50 && g >= r * 0.45 && g <= r * 0.88 && b < 100) {
+          plantPixels++;
+          continue;
+        }
+      }
+    }
+    // Require at least 15% of pixels to be plant-like
+    return (plantPixels / total) > 0.15;
+  }
+
+
   static img.Image _adaptiveBrightness(img.Image src) {
     double sum = 0;
     for (int y = 0; y < src.height; y++) {
@@ -123,47 +233,12 @@ class AIModelService {
     return src;
   }
 
-  // ─── Response parsing ────────────────────────────────────────────────────
-
-static ScanResult _parseResponse(Map<String, dynamic> data, String cropName, String imagePath) {
-  final type = data['type'] as String? ?? 'error';
-  
-  switch (type) {
-    case 'success':
-      final fullLabel = data['fullLabel'] as String?;
-      // When cropName is 'any', derive the actual crop from the fullLabel
-      // e.g. "Tomato___Early_blight" → "Tomato"
-      final actualCrop = cropName == 'any' && fullLabel != null
-          ? fullLabel.split('___').first.replaceAll('_(', ' ').replaceAll('_', ' ').trim()
-          : cropName;
-      return ScanResult(
-        cropName:    actualCrop,
-        diseaseName: data['disease'] as String? ?? 'Unknown',
-        confidence:  (data['confidence'] as num?)?.toDouble() ?? 0.0,
-        imagePath:   imagePath,
-        hasDisease:  !(data['disease'] as String? ?? '').toLowerCase().contains('healthy'),
-        severity:    data['severity'] as String?,
-        fullLabel:   fullLabel,
-      );
-    case 'wrongCrop':
-      throw Exception('Wrong crop detected: ${data['detectedCrop']}. You selected ${data['selectedCrop']}.');
-    case 'lowConfidence':
-      throw Exception('Image not clear enough (${((data['confidence'] as num?)?.toDouble() ?? 0) * 100 ~/ 1}% confidence). Try better lighting.');
-    case 'outOfDistribution':
-      throw Exception('Could not identify this as a known plant disease. Make sure to scan a single leaf close-up.');
-    case 'poorQuality':
-      throw Exception('Image quality too poor: ${data['message']}');
-    default:
-      throw Exception(data['message'] as String? ?? 'Analysis failed');
-  }
-}
-
-  // ─── Display helpers ─────────────────────────────────────────────────────
-
   static String getConfidenceDisplay(double confidence) =>
       '${(confidence * 100).toStringAsFixed(0)}% Certain';
 
   static String getDiseaseDisplayName(ScanResult result) => result.diseaseName;
 
-  static void dispose() {}
+  static void dispose() {
+    _interpreter?.close();
+  }
 }

@@ -99,7 +99,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             return Dismissible(
                               key: ValueKey(item.id),
                               direction: DismissDirection.endToStart,
-                              confirmDismiss: (_) => _confirmDelete(index),
+                              confirmDismiss: (_) => _confirmDelete(),
+                              onDismissed: (_) {
+                                final idx = HistoryService.history.indexWhere((r) => r.id == item.id);
+                                if (idx >= 0) HistoryService.removeResult(idx);
+                                setState(() {});
+                                context.read<AppState>().refreshStatsLocal();
+                              },
                               background: Container(
                                 color: Colors.red,
                                 alignment: Alignment.centerRight,
@@ -133,8 +139,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// CONFIRM DELETE DIALOG
-  Future<bool?> _confirmDelete(int index) async {
+  /// CONFIRM DELETE DIALOG — only shows the dialog and returns the user's choice.
+  /// Actual removal is handled by the Dismissible's onDismissed callback.
+  Future<bool?> _confirmDelete() async {
     final appState = context.read<AppState>();
     return showDialog<bool>(
       context: context,
@@ -147,12 +154,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: Text(appState.tr('cancel')),
           ),
           ElevatedButton(
-            onPressed: () {
-              HistoryService.removeResult(index);
-              setState(() {});
-              appState.refreshStatsLocal();
-              Navigator.pop(context, true);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(appState.tr('delete')),
           ),
         ],

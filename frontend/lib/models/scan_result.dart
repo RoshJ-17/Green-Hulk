@@ -55,4 +55,20 @@ class ScanResult {
       heatmapPng: json['heatmapPng'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'cropType': cropName,
+      'diseaseName': diseaseName,
+      'confidence': confidence,
+      'imagePath': imagePath,
+      'createdAt': date.toIso8601String(),
+      'severity': severity,
+      'fullLabel': fullLabel,
+      'hadQualityWarnings': qualityWarnings != null,
+      'heatmapPng': heatmapPng,
+      'rating': rating,
+    };
+  }
 }

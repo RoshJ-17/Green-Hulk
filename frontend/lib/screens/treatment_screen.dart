@@ -1028,6 +1028,8 @@ Method:    ${treatment['name']}
     AudioService.playButtonClick();
     setState(() => rating = score);
     result.rating = score;
+    // Persist update
+    HistoryService.updateResult(result);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Thanks for the reward! $score stars."),

@@ -8,8 +8,6 @@ environment:
   sdk: ^3.9.0
 
 dependencies:
-  google_maps_flutter: ^2.9.0
-  google_maps_flutter_web: ^0.5.10
   location: ^7.0.0
   flutter_tts: ^4.2.0          # FIX: v3.x used v1 embedding; v4.x is fully v2-compatible
   url_launcher: ^6.3.0
@@ -51,6 +49,11 @@ dependencies:
   cross_file: 0.3.4+2
   objectbox: ^5.2.0
   objectbox_flutter_libs: ^5.2.0
+  tflite_flutter: ^0.12.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

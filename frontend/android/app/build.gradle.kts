@@ -32,9 +32,11 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Disable R8 minification to prevent OOM and shrinking issues with TFLite/ObjectBox
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

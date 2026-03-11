@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class WeatherService {
-  static const String _apiKey = '506643b44bfd47fabfe190218261003';
+  static const String _apiKey = 'e718dc8f23174d6180c182409261103';
   static const String _baseUrl = 'https://api.weatherapi.com/v1';
 
   static const double windWarningKph = 15.0;
@@ -31,7 +31,17 @@ class WeatherService {
       return _parseAdvisory(data);
     } catch (e) {
       debugPrint('WeatherService error: $e');
-      rethrow;
+      return WeatherAdvisory(
+        locationName: 'Unknown',
+        locationRegion: '',
+        tempC: 0,
+        windKph: 0,
+        humidity: 0,
+        condition: 'Unavailable',
+        rainChancePct: 0,
+        isWindy: false,
+        isRainy: false,
+      );
     }
   }
 
@@ -79,6 +89,7 @@ class WeatherService {
 
     return WeatherAdvisory(
       locationName: location['name'] as String,
+      locationRegion: '${location['region']}, ${location['country']}',
       tempC: tempC,
       windKph: windKph,
       humidity: humidity,
@@ -99,6 +110,7 @@ class WeatherService {
 
 class WeatherAdvisory {
   final String locationName;
+  final String locationRegion;
   final double tempC;
   final double windKph;
   final int humidity;
@@ -112,6 +124,7 @@ class WeatherAdvisory {
 
   const WeatherAdvisory({
     required this.locationName,
+    required this.locationRegion,
     required this.tempC,
     required this.windKph,
     required this.humidity,

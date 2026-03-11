@@ -16,6 +16,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'objectbox/models/app_settings.dart';
 import 'objectbox/models/auth_token.dart';
+import 'objectbox/models/history_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -82,6 +83,28 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(3, 3430581730674478617),
+    name: 'HistoryEntity',
+    lastPropertyId: const obx_int.IdUid(2, 6490706276704806471),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 7082361846309209945),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 6490706276704806471),
+        name: 'jsonPayload',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -127,7 +150,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(2, 2681194488126099012),
+    lastEntityId: const obx_int.IdUid(3, 3430581730674478617),
     lastIndexId: const obx_int.IdUid(0, 0),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
@@ -218,6 +241,34 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    HistoryEntity: obx_int.EntityDefinition<HistoryEntity>(
+      model: _entities[2],
+      toOneRelations: (HistoryEntity object) => [],
+      toManyRelations: (HistoryEntity object) => {},
+      getId: (HistoryEntity object) => object.id,
+      setId: (HistoryEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (HistoryEntity object, fb.Builder fbb) {
+        final jsonPayloadOffset = fbb.writeString(object.jsonPayload);
+        fbb.startTable(3);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, jsonPayloadOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final jsonPayloadParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final object = HistoryEntity(jsonPayload: jsonPayloadParam)
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0);
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -260,5 +311,18 @@ class AuthTokenEntity_ {
   /// See [AuthTokenEntity.userDataJson].
   static final userDataJson = obx.QueryStringProperty<AuthTokenEntity>(
     _entities[1].properties[2],
+  );
+}
+
+/// [HistoryEntity] entity fields to define ObjectBox queries.
+class HistoryEntity_ {
+  /// See [HistoryEntity.id].
+  static final id = obx.QueryIntegerProperty<HistoryEntity>(
+    _entities[2].properties[0],
+  );
+
+  /// See [HistoryEntity.jsonPayload].
+  static final jsonPayload = obx.QueryStringProperty<HistoryEntity>(
+    _entities[2].properties[1],
   );
 }

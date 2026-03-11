@@ -19,9 +19,13 @@ import 'services/camera_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/ai_model_service.dart';
 import 'services/voice_search_service.dart';
+import 'services/pending_upload_service.dart';
+import 'package:sample_app_1/objectbox/objectbox_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await ObjectBoxStore.initialize();
 
   // Initialize AppState (reads saved language + session)
   final appState = AppState();
@@ -34,6 +38,14 @@ Future<void> main() async {
 
   await ConnectivityService.initialize();
   await AIModelService.initialize();
+  await PendingUploadService.initialize();
+
+  // Auto-sync offline uploads when connectivity comes back
+  ConnectivityService.addListener((isOnline) {
+    if (isOnline) {
+      PendingUploadService.syncPendingUploads();
+    }
+  });
 
   runApp(
     ChangeNotifierProvider<AppState>.value(

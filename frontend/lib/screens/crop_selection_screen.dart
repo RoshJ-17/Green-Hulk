@@ -116,34 +116,34 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
     }
   }
 
-  /// Opens camera and scans any of the selected crops (no picking required)
+  /// Opens camera. If crops are selected, validates the scanned plant matches.
+  /// If no crops are selected, uses auto-detect mode (any plant).
   Future<void> _startScan() async {
     final appState = context.read<AppState>();
-    final selected = appState.selectedCrops;
+    final selected = appState.selectedCrops.toList();
 
+    if (!mounted) return;
+
+    // Inform user when scanning in auto-detect mode
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(appState.tr('select_crop_first')),
-          backgroundColor: Colors.orange,
+        const SnackBar(
+          content: Text('Auto-detect mode — scanning any plant 🌿'),
+          backgroundColor: AppTheme.primaryGreen,
+          duration: Duration(seconds: 2),
         ),
       );
-      return;
     }
 
-    if (!mounted) return;
-    // Always pass 'any' — backend detects the crop from the image.
-    // No need to ask the user which specific crop they are scanning.
-    final ScanResult? result = await Navigator.push(
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ScanCameraScreen(cropName: 'any')),
+      MaterialPageRoute(
+        builder: (_) => ScanCameraScreen(
+          cropName: 'any',
+          selectedCrops: selected.isEmpty ? null : selected,
+        ),
+      ),
     );
-
-    if (!mounted) return;
-    if (result != null) {
-      Navigator.pushNamed(context, '/treatment',
-          arguments: {'result': result, 'isFromHistory': false});
-    }
   }
 
   // Clear All Selection
@@ -583,26 +583,29 @@ class _CropSelectionScreenState extends State<CropSelectionScreen> {
                           ),
                         ),
                         child: ClipOval(
-                          child: assetPath.isNotEmpty
-                              ? Image.asset(
-                                  assetPath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (ctx, error, stackTrace) =>
-                                      Icon(
-                                        Icons.agriculture,
-                                        size: 40,
-                                        color: isSelected
-                                            ? AppTheme.primaryGreen
-                                            : Colors.grey.shade400,
-                                      ),
-                                )
-                              : Icon(
-                                  Icons.agriculture,
-                                  size: 40,
-                                  color: isSelected
-                                      ? AppTheme.primaryGreen
-                                      : Colors.grey.shade400,
-                                ),
+                          child: Container(
+                            color: Colors.white,
+                            child: assetPath.isNotEmpty
+                                ? Image.asset(
+                                    assetPath,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (ctx, error, stackTrace) =>
+                                        Icon(
+                                          Icons.agriculture,
+                                          size: 40,
+                                          color: isSelected
+                                              ? AppTheme.primaryGreen
+                                              : Colors.grey.shade400,
+                                        ),
+                                  )
+                                : Icon(
+                                    Icons.agriculture,
+                                    size: 40,
+                                    color: isSelected
+                                        ? AppTheme.primaryGreen
+                                        : Colors.grey.shade400,
+                                  ),
+                          ),
                         ),
                       ),
                     ),

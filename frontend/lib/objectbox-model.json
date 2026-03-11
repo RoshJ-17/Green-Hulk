@@ -55,9 +55,28 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "3:3430581730674478617",
+      "lastPropertyId": "2:6490706276704806471",
+      "name": "HistoryEntity",
+      "properties": [
+        {
+          "id": "1:7082361846309209945",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6490706276704806471",
+          "name": "jsonPayload",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "2:2681194488126099012",
+  "lastEntityId": "3:3430581730674478617",
   "lastIndexId": "0:0",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
