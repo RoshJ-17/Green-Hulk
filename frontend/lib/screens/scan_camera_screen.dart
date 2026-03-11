@@ -7,7 +7,6 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../models/scan_result.dart';
 import '../theme/app_theme.dart';
 import '../screens/treatment_screen.dart';
 import '../services/ai_model_service.dart';
@@ -183,19 +182,6 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     return score < _blurThreshold;
   }
 
-  /// Throws [WrongCropException] when the scan result's crop doesn't match
-  /// any of the user-selected crops. A no-op when selectedCrops is null/empty.
-  void _validateCropMatch(ScanResult r) {
-    final sel = widget.selectedCrops;
-    if (sel == null || sel.isEmpty) return;
-    final pred = r.cropName.toLowerCase();
-    final ok = sel.any((c) {
-      final cl = c.toLowerCase();
-      return cl == pred || cl.contains(pred) || pred.contains(cl);
-    });
-    if (!ok) throw WrongCropException(r.cropName, sel.join(' / '));
-  }
-
   // ── Capture pipeline ────────────────────────────────────────────────────
   Future<void> captureImage() async {
     if (controller == null || _initFuture == null || isProcessing) return;
@@ -243,10 +229,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       setState(() => isProcessing = true);
       final result = await AIModelService.analyzeImage(
         imagePath:   xFile.path,
-        cropName:    widget.cropName,
-        withHeatmap: heatmapOn,
+          cropName:      widget.cropName,
+          selectedCrops: widget.selectedCrops,
+          withHeatmap:   heatmapOn,
       );
-      _validateCropMatch(result);
 
       if (!mounted) return;
       // Navigate directly to Treatment screen (TreatmentScreen saves to history)
@@ -495,14 +481,14 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     try {
       await _initFuture;
       final result = await VideoScanService.rapidCaptureAndAnalyze(
-        controller: controller!,
-        cropName: widget.cropName,
-        withHeatmap: heatmapOn,
+        controller:    controller!,
+        cropName:      widget.cropName,
+        selectedCrops: widget.selectedCrops,
+        withHeatmap:   heatmapOn,
         onStatus: (status) {
           if (mounted) setState(() => _videoStatus = status);
         },
       );
-      _validateCropMatch(result);
 
       if (!mounted) return;
       await Navigator.pushReplacement(
@@ -564,10 +550,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     try {
       final result = await AIModelService.analyzeImage(
         imagePath:   file.path,
-        cropName:    widget.cropName,
-        withHeatmap: heatmapOn,
+          cropName:      widget.cropName,
+          selectedCrops: widget.selectedCrops,
+          withHeatmap:   heatmapOn,
       );
-      _validateCropMatch(result);
       if (!mounted) return;
       await Navigator.pushReplacement(
         context,

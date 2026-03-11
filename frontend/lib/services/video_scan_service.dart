@@ -11,6 +11,7 @@ class VideoScanService {
   static Future<ScanResult> rapidCaptureAndAnalyze({
     required CameraController controller,
     required String cropName,
+    List<String>? selectedCrops,
     bool withHeatmap = false,
     void Function(String status)? onStatus,
   }) async {
@@ -35,6 +36,7 @@ class VideoScanService {
         final result = await AIModelService.analyzeImage(
           imagePath: captures[i].path,
           cropName: cropName,
+          selectedCrops: selectedCrops,
           withHeatmap: withHeatmap && i == 0,
         );
         results.add(result);

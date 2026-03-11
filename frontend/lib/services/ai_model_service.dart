@@ -45,6 +45,7 @@ class AIModelService {
   static Future<ScanResult> analyzeImage({
     required String imagePath,
     required String cropName,
+    List<String>? selectedCrops,
     bool withHeatmap = false,
   }) async {
     debugPrint('AIModelService: analysing "$cropName" locally');
@@ -85,7 +86,8 @@ class AIModelService {
     }
 
     // Gate 2: low overall confidence  
-    if (top1 < 0.55) {
+    final bool hasSelectedCrops = selectedCrops != null && selectedCrops.isNotEmpty;
+    if (top1 < (hasSelectedCrops ? 0.70 : 0.55)) {
       throw Exception(
         'Could not identify the plant clearly (${(top1 * 100).toInt()}% confidence). '
         'Ensure the leaf fills the frame in good lighting.',
@@ -93,7 +95,7 @@ class AIModelService {
     }
 
     // Gate 3: model is ambiguous between two classes — likely not a real leaf
-    if ((top1 - top2) < 0.12 && top1 < 0.75) {
+    if ((top1 - top2) < (hasSelectedCrops ? 0.20 : 0.12) && top1 < 0.75) {
       throw Exception(
         'Result unclear (${(top1 * 100).toInt()}% vs ${(top2 * 100).toInt()}%). '
         'Please retake the photo with the leaf clearly centred.',
@@ -110,11 +112,23 @@ class AIModelService {
     final actualCrop = cropName == 'any' ? predictedSpecies : cropName;
     
     // simple compare for matching species
+    // Crop validation: single-crop mode (cropName) or multi-crop mode (selectedCrops)
     if (cropName != 'any') {
       final selectedFormatted = cropName.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
       final predictedFormatted = predictedSpeciesMatch.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
       if (!predictedFormatted.contains(selectedFormatted) && !selectedFormatted.contains(predictedFormatted)) {
         throw WrongCropException(predictedSpecies, cropName);
+      }
+    } else if (hasSelectedCrops) {
+      final predictedFormatted = predictedSpeciesMatch.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+      final matchesAny = selectedCrops.any((crop) {
+        final cropFormatted = crop.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+        return cropFormatted == predictedFormatted ||
+               cropFormatted.contains(predictedFormatted) ||
+               predictedFormatted.contains(cropFormatted);
+      });
+      if (!matchesAny) {
+        throw WrongCropException(predictedSpecies, selectedCrops.join(' / '));
       }
     }
 
