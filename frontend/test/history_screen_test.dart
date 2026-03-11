@@ -3,28 +3,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sample_app_1/screens/history_screen.dart';
 import 'package:sample_app_1/services/history_service.dart';
 import 'package:sample_app_1/models/scan_result.dart';
+import 'package:sample_app_1/services/app_state.dart';
+import 'test_helper.dart';
 
 void main() {
-  setUp(() {
+  setUp(() async {
+    await mockSharedPreferences();
     HistoryService.clear();
   });
 
   testWidgets('Shows empty state when no history exists',
       (WidgetTester tester) async {
+    final appState = AppState();
+    await appState.init();
+
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
+      createTestWidget(
+        child: const HistoryScreen(),
+        appState: appState,
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.text('No scan history yet'), findsOneWidget);
-    expect(find.textContaining('No scans yet'), findsOneWidget);
+    // Corrected strings based on HistoryScreen code
+    expect(find.text('No scans yet.'), findsOneWidget);
+    expect(find.text('Start by scanning a crop!'), findsOneWidget);
   });
 
   testWidgets('Displays history items when present',
       (WidgetTester tester) async {
+    final appState = AppState();
+    await appState.init();
+
     // Add fake history item
     HistoryService.addResult(
       ScanResult(
@@ -37,18 +48,24 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
+      createTestWidget(
+        child: const HistoryScreen(),
+        appState: appState,
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Tomato - Early Blight'), findsOneWidget);
+    // Find strings separately as they are in different Text widgets
+    expect(find.text('Tomato'), findsOneWidget);
+    expect(find.text('Early Blight'), findsOneWidget);
   });
 
   testWidgets('Delete dialog appears when swiping item',
       (WidgetTester tester) async {
+    final appState = AppState();
+    await appState.init();
+
     HistoryService.addResult(
       ScanResult(
         cropName: 'Corn',
@@ -60,8 +77,9 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
+      createTestWidget(
+        child: const HistoryScreen(),
+        appState: appState,
       ),
     );
 
@@ -78,6 +96,9 @@ void main() {
 
   testWidgets('Confirm delete removes item',
       (WidgetTester tester) async {
+    final appState = AppState();
+    await appState.init();
+
     HistoryService.addResult(
       ScanResult(
         cropName: 'Apple',
@@ -89,8 +110,9 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HistoryScreen(),
+      createTestWidget(
+        child: const HistoryScreen(),
+        appState: appState,
       ),
     );
 
@@ -105,6 +127,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now empty state should appear
-    expect(find.text('No scan history yet'), findsOneWidget);
+    expect(find.text('No scans yet.'), findsOneWidget);
   });
 }
