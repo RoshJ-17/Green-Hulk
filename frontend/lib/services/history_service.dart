@@ -8,6 +8,9 @@ import '../models/scan_result.dart';
 class HistoryService {
   static final List<ScanResult> _history = [];
 
+  /// Returns an unmodifiable view of the current history list.
+  static List<ScanResult> get history => List.unmodifiable(_history);
+
   /// Adds a new scan result to the top of the history list.
   static void addResult(ScanResult result) {
     _history.insert(0, result); // Add to top
