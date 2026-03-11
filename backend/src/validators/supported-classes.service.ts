@@ -88,8 +88,22 @@ export class SupportedClassesService {
   }
 
   normalizeCropName(crop: string): string {
-    // Handle variations: "Pepper,_bell" -> "Pepper", "Corn_(maize)" -> "Corn"
-    return crop.split(/[,_(]/)[0].trim();
+    // Handle variations: 
+    // "Pepper,_bell" -> "Pepper"
+    // "Corn_(maize)" -> "Corn"
+    // "Cherry_(including_sour)" -> "Cherry"
+    const cleaned = crop.split(/[,_(]/)[0].trim();
+    
+    // Explicit mappings for common variations
+    const mappings: Record<string, string> = {
+      'Pepper': 'Pepper',
+      'Corn': 'Corn',
+      'Cherry': 'Cherry',
+      'Potato': 'Potato',
+      'Tomato': 'Tomato'
+    };
+    
+    return mappings[cleaned] || cleaned;
   }
 
   getDiseasesForCrop(cropName: string, allLabels: string[]): string[] {

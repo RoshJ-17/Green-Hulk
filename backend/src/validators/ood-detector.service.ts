@@ -18,12 +18,13 @@ export class OodDetectorService {
     private readonly supportedClasses: SupportedClassesService,
     configService: ConfigService,
   ) {
+    // Relaxed thresholds to improve recognition recall
     this.MAX_PROB_THRESHOLD =
-      configService.get<number>("MAX_PROB_THRESHOLD") || 0.4;
+      configService.get<number>("MAX_PROB_THRESHOLD") || 0.25;
     this.ENTROPY_THRESHOLD =
-      configService.get<number>("ENTROPY_THRESHOLD") || 2.5;
+      configService.get<number>("ENTROPY_THRESHOLD") || 3.0;
     this.TOP_K_MARGIN_THRESHOLD =
-      configService.get<number>("TOP_K_MARGIN_THRESHOLD") || 0.15;
+      configService.get<number>("TOP_K_MARGIN_THRESHOLD") || 0.1;
   }
 
   analyze(probabilities: number[], labels: string[]): OODResult {
@@ -130,10 +131,16 @@ export class OodDetectorService {
     });
 
     // Check if top K are from same crop
-    const crops = new Set(
-      predictions.map((p) => this.supportedClasses.normalizeCropName(p.crop)),
+    // Only flag as conflicting if a non-dominant crop has meaningful probability (>5%)
+    const primaryCrop = predictions[0]
+      ? this.supportedClasses.normalizeCropName(predictions[0].crop)
+      : '';
+    const isDifferentCrops = predictions.some(
+      (p, i) =>
+        i > 0 &&
+        this.supportedClasses.normalizeCropName(p.crop) !== primaryCrop &&
+        p.probability > 0.05,
     );
-    const isDifferentCrops = crops.size > 1;
 
     // Calculate margin between top 2
     const margin = predictions[0].probability - predictions[1].probability;
@@ -142,7 +149,7 @@ export class OodDetectorService {
       predictions,
       isDifferentCrops,
       margin,
-      crops: Array.from(crops),
+      crops: [primaryCrop],
     };
   }
 

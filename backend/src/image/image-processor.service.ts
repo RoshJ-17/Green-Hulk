@@ -84,6 +84,7 @@ export class ImageProcessorService {
 
   /**
    * Convert raw RGB buffer to Float32Array with [0, 1] normalization
+   * Matches PlantVillage MobileNet TFLite standard
    */
   private imageToFloat32Array(
     buffer: Buffer,
@@ -94,9 +95,8 @@ export class ImageProcessorService {
     let bufferIndex = 0;
 
     for (let i = 0; i < buffer.length; i++) {
-      // Normalize to [-1, 1] range (Standard for MobileNet)
-      // (pixel - 127.5) / 127.5
-      float32Data[bufferIndex++] = (buffer[i] - 127.5) / 127.5;
+      // Normalize to [0, 1] range
+      float32Data[bufferIndex++] = buffer[i] / 255.0;
     }
 
     return float32Data;
