@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:sample_app_1/services/app_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Globally disables real HTTP calls in tests.
+/// Globally disables real HTTP calls in tests to prevent side effects
+/// and ensure tests are fast and deterministic.
 class MockHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -12,17 +13,26 @@ class MockHttpOverrides extends HttpOverrides {
   }
 }
 
-/// Wraps a widget with the necessary providers for testing.
-/// Also initializes SharedPreferences with mock values.
+/// Wraps a widget with the necessary providers and configuration for testing.
+/// 
+/// This helper:
+/// 1. Disables real network calls via [MockHttpOverrides].
+/// 2. Mocks [SharedPreferences] with [mockPrefs].
+/// 3. Provides an [AppState] instance to the widget tree.
+/// 4. Wraps the [child] in a [MaterialApp] with the specified [routes].
 Future<Widget> wrapWithProviders(
   Widget child, {
   AppState? appState,
   Map<String, Object>? mockPrefs,
   Map<String, WidgetBuilder>? routes,
 }) async {
+  // Ensure network calls are mocked
   HttpOverrides.global = MockHttpOverrides();
+  
+  // Set initial mock values for SharedPreferences
   SharedPreferences.setMockInitialValues(mockPrefs ?? {});
   
+  // Initialize or use provided AppState
   final state = appState ?? AppState();
   if (appState == null) {
     await state.init();
