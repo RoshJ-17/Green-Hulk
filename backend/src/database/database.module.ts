@@ -15,8 +15,22 @@ import { User } from "./entities/user.entity";
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get<string>("DATABASE_URL");
         const entities = [ScanRecord, TreatmentPlan, UserPreferences, User];
+        const nodeEnv = configService.get<string>("NODE_ENV") || process.env.NODE_ENV;
+
+        // Use SQLite for testing
+        if (nodeEnv === 'test') {
+          return {
+            type: 'sqlite',
+            database: ':memory:',
+            entities,
+            synchronize: true,
+            logging: false,
+            retryAttempts: 0,
+          };
+        }
+
+        const databaseUrl = configService.get<string>("DATABASE_URL");
 
         const dataSourceFactory = async (options: DataSourceOptions | undefined) => {
           const ds = new DataSource(options!);

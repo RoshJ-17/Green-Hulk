@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sample_app_1/screens/treatment_screen.dart';
 import 'package:sample_app_1/models/scan_result.dart';
+import 'helpers/test_helper.dart';
 
 void main() {
   // Create a healthy scan result that matches your model
@@ -17,20 +18,10 @@ void main() {
     );
   }
 
-  Widget buildTestableWidget(Widget child) {
-    return MaterialApp(
-      routes: {
-        '/crops': (context) =>
-            const Scaffold(body: Center(child: Text("Crops Screen"))),
-      },
-      home: child,
-    );
-  }
-
   testWidgets("TreatmentScreen renders healthy state correctly",
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestableWidget(
+      await wrapWithProviders(
         TreatmentScreen(result: createHealthyResult()),
       ),
     );
@@ -44,7 +35,7 @@ void main() {
   testWidgets("Tabs are visible",
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestableWidget(
+      await wrapWithProviders(
         TreatmentScreen(result: createHealthyResult()),
       ),
     );
@@ -59,7 +50,7 @@ void main() {
   testWidgets("Rating stars update and show snackbar",
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestableWidget(
+      await wrapWithProviders(
         TreatmentScreen(result: createHealthyResult()),
       ),
     );
@@ -75,8 +66,12 @@ void main() {
   testWidgets("New Scan button navigates correctly",
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      buildTestableWidget(
+      await wrapWithProviders(
         TreatmentScreen(result: createHealthyResult()),
+        routes: {
+          '/crops': (context) =>
+              const Scaffold(body: Center(child: Text("Crops Screen"))),
+        },
       ),
     );
 

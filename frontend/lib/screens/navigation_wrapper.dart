@@ -16,6 +16,7 @@ import 'crop_selection_screen.dart';
 import 'history_screen.dart';
 import 'map_screen.dart';
 import 'settings_screen.dart';
+import 'map_screen.dart';
 import 'scan_camera_screen.dart';
 import '../models/scan_result.dart';
 
