@@ -164,17 +164,20 @@ class AuthService {
 
   // ── Session ───────────────────────────────────────────────────────────────
 
+  /// Removes the stored authentication token and user data.
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
   }
 
+  /// Retrieves the stored authentication token if present.
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
+  /// Checks if a non-expired authentication token exists.
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     if (token == null) return false;
