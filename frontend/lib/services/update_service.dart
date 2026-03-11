@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -10,12 +11,11 @@ class UpdateService {
 
   static Future<void> checkForUpdate(BuildContext context) async {
     // Only show update prompt on Android (not web, not iOS)
-    if (kIsWeb) return;
+    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
 
     try {
       final response = await http
-          .get(Uri.parse('${ApiConfig.apiUrl}/version'))
-          .timeout(const Duration(seconds: 5));
+          .get(Uri.parse('${ApiConfig.apiUrl}/version'));
 
       if (response.statusCode != 200) return;
 
