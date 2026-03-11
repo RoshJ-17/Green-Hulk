@@ -84,6 +84,7 @@ describe("DiagnosisService", () => {
         {
           provide: CropValidatorService,
           useValue: {
+            resolveBestIndexForSelectedCrop: jest.fn().mockReturnValue(0),
             validatePrediction: jest.fn().mockReturnValue({
               type: "valid",
               disease: "healthy",
