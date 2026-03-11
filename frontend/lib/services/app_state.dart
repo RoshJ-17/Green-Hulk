@@ -33,6 +33,7 @@ class AppState extends ChangeNotifier {
   List<String> get selectedCrops => List.unmodifiable(_selectedCrops);
   bool get hasCrops => _selectedCrops.isNotEmpty;
   bool get canAddMoreCrops => _selectedCrops.length < maxCrops;
+  /// Checks if a specific [crop] is in the user's selected list.
   bool isCropSelected(String crop) => _selectedCrops.contains(crop);
 
   // ── Keys ──────────────────────────────────────────────────────────────────
@@ -136,8 +137,9 @@ class AppState extends ChangeNotifier {
   // Stats
   // ═════════════════════════════════════════════════════════════════════════
 
+  /// Refreshes the local scan statistics by fetching the latest history.
   Future<void> refreshStats() async {
-    // Ensure history is loaded
+    // Ensure history is loaded from the backend
     await HistoryService.fetchHistory();
     final history = HistoryService.history;
 
