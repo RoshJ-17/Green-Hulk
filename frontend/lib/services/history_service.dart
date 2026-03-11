@@ -8,18 +8,19 @@ import '../models/scan_result.dart';
 class HistoryService {
   static final List<ScanResult> _history = [];
 
-  static List<ScanResult> get history => List.unmodifiable(_history);
-
+  /// Adds a new scan result to the top of the history list.
   static void addResult(ScanResult result) {
     _history.insert(0, result); // Add to top
   }
 
+  /// Removes a scan result at the specified [index].
   static void removeResult(int index) {
     if (index >= 0 && index < _history.length) {
       _history.removeAt(index);
     }
   }
 
+  /// Clears all entries from the local history list.
   static void clear() {
     _history.clear();
   }
