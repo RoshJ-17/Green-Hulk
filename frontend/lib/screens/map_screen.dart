@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../theme/app_theme.dart';
+import '../utils/geo_utils.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────
 
