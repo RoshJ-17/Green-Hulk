@@ -41,8 +41,12 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
-    for (final c in _otpControllers) c.dispose();
-    for (final f in _otpFocusNodes) f.dispose();
+    for (final c in _otpControllers) {
+      c.dispose();
+    }
+    for (final f in _otpFocusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -168,7 +172,9 @@ class _SignupScreenState extends State<SignupScreen> {
     await AuthService.sendOtp(_phoneController.text.trim());
     if (!mounted) return;
     setState(() => _isLoadingStep2 = false);
-    for (final c in _otpControllers) c.clear();
+    for (final c in _otpControllers) {
+      c.clear();
+    }
     _otpFocusNodes[0].requestFocus();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

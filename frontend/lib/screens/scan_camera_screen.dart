@@ -47,7 +47,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   bool _isOffline    = false;
 
   /// Live blur warning shown while the user is framing the shot.
-  bool _blurWarning  = false;
+  final bool _blurWarning  = false;
 
   // Video scan state (US2.4)
   bool _isVideoScanning = false;

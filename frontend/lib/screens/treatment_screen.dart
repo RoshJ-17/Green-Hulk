@@ -10,7 +10,8 @@ import '../theme/app_theme.dart';
 import '../services/history_service.dart';
 import '../services/ai_model_service.dart';
 import '../services/audio_service.dart';
-import '../services/treatment_api_service.dart';
+import '../services/gemini_treatment_service.dart';
+import '../widgets/ai_chat_bottom_sheet.dart';
 import '../services/app_state.dart';
 import '../services/localization_service.dart';
 import '../services/gemini_translation_service.dart';
@@ -47,8 +48,13 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   String _langCode = 'en';
 
   static const _ttsLocaleMap = {
-    'en': 'en-IN', 'hi': 'hi-IN', 'ta': 'ta-IN',
-    'te': 'te-IN', 'kn': 'kn-IN', 'bn': 'bn-IN', 'pa': 'pa-IN',
+    'en': 'en-IN',
+    'hi': 'hi-IN',
+    'ta': 'ta-IN',
+    'te': 'te-IN',
+    'kn': 'kn-IN',
+    'bn': 'bn-IN',
+    'pa': 'pa-IN',
   };
 
   // Translated disease name for TTS
@@ -64,9 +70,9 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   Map<String, dynamic>? _selectedChemicalTreatment;
 
   // Heatmap
-  bool           _showHeatmap   = false;
-  Uint8List?     _heatmapBytes;
-  bool           _heatmapLoading = false;
+  bool _showHeatmap = false;
+  Uint8List? _heatmapBytes;
+  bool _heatmapLoading = false;
 
   @override
   void initState() {
@@ -117,12 +123,20 @@ class _TreatmentScreenState extends State<TreatmentScreen>
   }
 
   Future<void> _fetchHeatmapIfNeeded() async {
-    if (_heatmapBytes != null || result.heatmapPng != null) {
+    // Already have decoded bytes - just toggle visibility
+    if (_heatmapBytes != null) {
       setState(() => _showHeatmap = !_showHeatmap);
       return;
     }
 
-    // Heatmap wasn't requested at scan time → fetch it now
+    // Have base64 data but haven't decoded yet
+    if (result.heatmapPng != null) {
+      _heatmapBytes = base64Decode(result.heatmapPng!);
+      setState(() => _showHeatmap = !_showHeatmap);
+      return;
+    }
+
+    // Heatmap wasn't requested at scan time â†’ fetch it now
     setState(() => _heatmapLoading = true);
     try {
       final refreshed = await AIModelService.analyzeImage(
@@ -133,17 +147,10 @@ class _TreatmentScreenState extends State<TreatmentScreen>
 
       if (!mounted) return;
 
-      if (refreshed.heatmapPng != null) {
-        _heatmapBytes = base64Decode(refreshed.heatmapPng!);
-        setState(() {
-          _showHeatmap = true;
-          _heatmapLoading = false;
-        });
-      }
       if (refreshed.heatmapPng != null && mounted) {
         _heatmapBytes = base64Decode(refreshed.heatmapPng!);
         setState(() {
-          _showHeatmap   = true;
+          _showHeatmap = true;
           _heatmapLoading = false;
         });
       }
@@ -159,138 +166,48 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     super.dispose();
   }
 
-  /// Fetch treatments from backend API
- Future<void> _fetchTreatments() async {
-  if (!result.hasDisease) {
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    return;
-  }
+  /// Fetch AI-generated treatment plan
+  Future<void> _fetchTreatments() async {
+    if (!result.hasDisease) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return;
+    }
 
-  final diseaseKey =
-      result.fullLabel ?? '${result.cropName}___${result.diseaseName}';
-
-  try {
-    final data = await TreatmentApiService.getTreatments(diseaseKey);
-
-    if (!mounted) return;
-
-    if (data != null) {
-      final translated = await _translateDiseaseData(data, _langCode);
+    try {
+      final lang = context.read<AppState>().locale.languageCode;
+      final data = await GeminiTreatmentService.fetchTreatmentPlan(
+        result.cropName,
+        result.diseaseName,
+        lang,
+      );
 
       if (!mounted) return;
 
-      _diseaseData = translated;
-
-      if (_langCode != 'en') {
-        _translatedDiseaseName =
-            await GeminiTranslationService.translate(result.diseaseName, _langCode);
+      _diseaseData = data;
+      if (lang != 'en') {
+        _translatedDiseaseName = await GeminiTranslationService.translate(
+          result.diseaseName,
+          lang,
+        );
       } else {
         _translatedDiseaseName = result.diseaseName;
       }
-
-      if (!mounted) return;
 
       final allTreatments = _diseaseData!['treatments'] as List<dynamic>? ?? [];
 
       _selectedOrganicTreatment = _findTreatment(allTreatments, true);
       _selectedChemicalTreatment = _findTreatment(allTreatments, false);
-    } else {
-      _errorMessage = 'Could not load treatments. Using default advice.';
+
+      setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('Error fetching treatments from AI: $e');
+      if (!mounted) return;
+      _errorMessage =
+          'Could not load AI treatments. Using default offline advice.';
       _setFallbackData();
+      setState(() => _isLoading = false);
     }
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-  } catch (e) {
-    debugPrint('Error fetching treatments: $e');
-
-    if (!mounted) return;
-
-    _errorMessage = 'Connection error. Using offline advice.';
-    _setFallbackData();
-
-    setState(() => _isLoading = false);
-  }
-}
-
-  /// Deep-copies and translates relevant string fields in the treatment API
-  /// response into [langCode].  Returns the mutated copy (or the original if
-  /// translation is disabled / an error occurs).
-  Future<Map<String, dynamic>> _translateDiseaseData(
-      Map<String, dynamic> data, String langCode) async {
-    if (langCode == 'en' || GeminiTranslationService.apiKey.isEmpty) {
-      return data;
-    }
-
-    // Work on a shallow copy so we don't mutate the API cache
-    final translated = Map<String, dynamic>.from(data);
-
-    // Translate description
-    if (translated['description'] is String) {
-      translated['description'] = await GeminiTranslationService.translate(
-          translated['description'] as String, langCode);
-    }
-
-    // Translate each treatment's name + steps
-    if (translated['treatments'] is List) {
-      final treatments = (translated['treatments'] as List).map((t) async {
-        if (t is! Map) return t;
-        final tMap = Map<String, dynamic>.from(t as Map<String, dynamic>);
-        if (tMap['name'] is String) {
-          tMap['name'] = await GeminiTranslationService.translate(
-              tMap['name'] as String, langCode);
-        }
-        if (tMap['steps'] is List) {
-          tMap['steps'] = await Future.wait(
-            (tMap['steps'] as List).map((s) async {
-              if (s is! Map) return s;
-              final sMap = Map<String, dynamic>.from(s as Map<String, dynamic>);
-              if (sMap['action'] is String) {
-                sMap['action'] = await GeminiTranslationService.translate(
-                    sMap['action'] as String, langCode);
-              }
-              return sMap;
-            }),
-          );
-        }
-        return tMap;
-      });
-      translated['treatments'] = await Future.wait(treatments);
-    }
-
-    // Translate prevention actions
-    if (translated['prevention'] is List) {
-      translated['prevention'] = await Future.wait(
-        (translated['prevention'] as List).map((p) async {
-          if (p is! Map) return p;
-          final pMap = Map<String, dynamic>.from(p as Map<String, dynamic>);
-          if (pMap['action'] is String) {
-            pMap['action'] = await GeminiTranslationService.translate(
-                pMap['action'] as String, langCode);
-          }
-          return pMap;
-        }),
-      );
-    }
-
-    // Translate remedies actions
-    if (translated['remedies'] is List) {
-      translated['remedies'] = await Future.wait(
-        (translated['remedies'] as List).map((r) async {
-          if (r is! Map) return r;
-          final rMap = Map<String, dynamic>.from(r as Map<String, dynamic>);
-          if (rMap['action'] is String) {
-            rMap['action'] = await GeminiTranslationService.translate(
-                rMap['action'] as String, langCode);
-          }
-          return rMap;
-        }),
-      );
-    }
-
-    return translated;
   }
 
   Map<String, dynamic>? _findTreatment(List<dynamic> treatments, bool organic) {
@@ -323,7 +240,11 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     _selectedChemicalTreatment = {
       'name': 'Standard Chemical Control',
       'steps': [
-        {'action': 'Wear protective gear', 'icon': '🧤', 'timeframe': 'today'},
+        {
+          'action': 'Wear protective gear',
+          'icon': '🧤',
+          'timeframe': 'today',
+        },
         {
           'action': 'Apply recommended fungicide',
           'icon': '🧪',
@@ -349,7 +270,8 @@ class _TreatmentScreenState extends State<TreatmentScreen>
     final steps = treatment['steps'] as List<dynamic>? ?? [];
     final detected = L10nService.tr('tts_detected', _langCode);
     final treatmentLabel = L10nService.tr('tts_treatment', _langCode);
-    String speech = "$detected ${_translatedDiseaseName ?? result.diseaseName}. $treatmentLabel: ${treatment['name']}. ";
+    String speech =
+        "$detected ${_translatedDiseaseName ?? result.diseaseName}. $treatmentLabel: ${treatment['name']}. ";
 
     for (var step in steps) {
       speech += "${step['action']}. ";
@@ -438,7 +360,11 @@ Method:    ${treatment['name']}
                 color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -454,7 +380,10 @@ Method:    ${treatment['name']}
         elevation: 0,
         title: Text(
           appState.tr('treatment_plan'),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         leading: IconButton(
           icon: Container(
@@ -490,6 +419,22 @@ Method:    ${treatment['name']}
           ),
           _buildRatingAndActions(),
         ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => AiChatBottomSheet(result: widget.result),
+            );
+          },
+          backgroundColor: AppTheme.primaryGreen,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.auto_awesome),
+        ),
       ),
     );
   }
@@ -535,8 +480,8 @@ Method:    ${treatment['name']}
                   _heatmapLoading
                       ? 'Loading heatmap…'
                       : _showHeatmap
-                          ? '🌡 Hide Heatmap'
-                          : '🌡 Show Heatmap',
+                      ? '🌡 Hide Heatmap'
+                      : '🌡 Show Heatmap',
                   Colors.deepOrange,
                 ),
               ),
@@ -571,23 +516,26 @@ Method:    ${treatment['name']}
               borderRadius: BorderRadius.circular(12),
               child: Stack(
                 children: [
-                  Image.memory(_heatmapBytes!,
-                      width: double.infinity,
-                      height: 220,
-                      fit: BoxFit.cover),
+                  Image.memory(
+                    _heatmapBytes!,
+                    width: double.infinity,
+                    height: 220,
+                    fit: BoxFit.cover,
+                  ),
                   Positioned(
                     bottom: 0,
                     left: 0,
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       color: Colors.black54,
                       child: const Text(
                         'Grad-CAM — Red areas influenced the diagnosis most',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Colors.white, fontSize: 11),
+                        style: TextStyle(color: Colors.white, fontSize: 11),
                       ),
                     ),
                   ),
@@ -627,9 +575,15 @@ Method:    ${treatment['name']}
       unselectedLabelColor: Colors.grey,
       indicatorColor: AppTheme.primaryGreen,
       tabs: [
-        Tab(text: appState.tr('treatments'), icon: const Icon(Icons.medication_liquid)),
+        Tab(
+          text: appState.tr('treatments'),
+          icon: const Icon(Icons.medication_liquid),
+        ),
         Tab(text: appState.tr('prevention'), icon: const Icon(Icons.shield)),
-        Tab(text: appState.tr('remedies'), icon: const Icon(Icons.home_repair_service)),
+        Tab(
+          text: appState.tr('remedies'),
+          icon: const Icon(Icons.home_repair_service),
+        ),
       ],
     );
   }
@@ -654,15 +608,25 @@ Method:    ${treatment['name']}
           child: Row(
             children: [
               Expanded(
-                child: _buildTypeButton(context.read<AppState>().tr('organic_tab'), showOrganicTreatment, () {
-                  setState(() => showOrganicTreatment = true);
-                }, enabled: !organicOnlyMode),
+                child: _buildTypeButton(
+                  context.read<AppState>().tr('organic_tab'),
+                  showOrganicTreatment,
+                  () {
+                    setState(() => showOrganicTreatment = true);
+                  },
+                  enabled: !organicOnlyMode,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildTypeButton(context.read<AppState>().tr('chemical_tab'), !showOrganicTreatment, () {
-                  setState(() => showOrganicTreatment = false);
-                }, enabled: !organicOnlyMode),
+                child: _buildTypeButton(
+                  context.read<AppState>().tr('chemical_tab'),
+                  !showOrganicTreatment,
+                  () {
+                    setState(() => showOrganicTreatment = false);
+                  },
+                  enabled: !organicOnlyMode,
+                ),
               ),
             ],
           ),
@@ -675,8 +639,10 @@ Method:    ${treatment['name']}
           _buildStepsInline(treatment),
 
         // Chemical-only: Medicine Calculator (US3.4) & Safety (US3.5)
-        if (!showOrganicTreatment) ...[  
-          MedicineCalculatorWidget(chemicalTreatment: _selectedChemicalTreatment),
+        if (!showOrganicTreatment) ...[
+          MedicineCalculatorWidget(
+            chemicalTreatment: _selectedChemicalTreatment,
+          ),
           ChemicalSafetyWidget(chemicalTreatment: _selectedChemicalTreatment),
         ],
       ],
@@ -740,95 +706,95 @@ Method:    ${treatment['name']}
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        Text(
-          treatment['name'] ?? "Recommended Actions",
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        ...steps.asMap().entries.map((entry) {
-          final i = entry.key;
-          final s = entry.value;
-          final isToday =
-              (s['timeframe'] as String?).toString().toLowerCase() == 'today';
+          Text(
+            treatment['name'] ?? "Recommended Actions",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ...steps.asMap().entries.map((entry) {
+            final i = entry.key;
+            final s = entry.value;
+            final isToday =
+                (s['timeframe'] as String?).toString().toLowerCase() == 'today';
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            child: ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: (isToday ? AppTheme.primaryGreen : Colors.blue)
-                      .withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
+              child: ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: (isToday ? AppTheme.primaryGreen : Colors.blue)
+                        .withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      s['icon'] ?? (i + 1).toString(),
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
                 ),
-                child: Center(
-                  child: Text(
-                    s['icon'] ?? (i + 1).toString(),
-                    style: const TextStyle(fontSize: 20),
+                title: Text(
+                  s['action'],
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  isToday ? "DO THIS TODAY" : "FOLLOW-UP WITHIN A WEEK",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isToday ? AppTheme.primaryGreen : Colors.blue,
                   ),
                 ),
               ),
-              title: Text(
-                s['action'],
-                style: const TextStyle(fontWeight: FontWeight.w600),
+            );
+          }),
+          if (safety.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
               ),
-              subtitle: Text(
-                isToday ? "DO THIS TODAY" : "FOLLOW-UP WITHIN A WEEK",
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isToday ? AppTheme.primaryGreen : Colors.blue,
-                ),
-              ),
-            ),
-          );
-        }),
-        if (safety.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: Colors.red, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      "Safety Warnings",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.warning_amber, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        "Safety Warnings",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...safety.map(
+                    (msg) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        "• $msg",
+                        style: const TextStyle(fontSize: 12, color: Colors.red),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...safety.map(
-                  (msg) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      "• $msg",
-                      style: const TextStyle(fontSize: 12, color: Colors.red),
-                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
-      ],
       ),
     );
   }
@@ -880,7 +846,9 @@ Method:    ${treatment['name']}
                       "Ingredients:",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    ...(r['ingredients'] as List).map((ing) => Text("• $ing")),
+                    ...(r['ingredients'] as List).map(
+                      (ing) => Text("• $ing"),
+                    ),
                     const SizedBox(height: 8),
                     const Text(
                       "Preparation:",
@@ -916,10 +884,7 @@ Method:    ${treatment['name']}
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Text(
-            appState.tr('no_treatment_needed'),
-            textAlign: TextAlign.center,
-          ),
+          Text(appState.tr('no_treatment_needed'), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -989,7 +954,11 @@ Method:    ${treatment['name']}
                 child: OutlinedButton.icon(
                   onPressed: speaking ? stopSpeaking : speakTreatment,
                   icon: Icon(speaking ? Icons.stop : Icons.volume_up),
-                  label: Text(speaking ? context.read<AppState>().tr('stop') : context.read<AppState>().tr('listen')),
+                  label: Text(
+                    speaking
+                        ? context.read<AppState>().tr('stop')
+                        : context.read<AppState>().tr('listen'),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     side: const BorderSide(color: AppTheme.primaryGreen),

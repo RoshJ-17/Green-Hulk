@@ -61,7 +61,7 @@ class PendingUploadService {
     if (ConnectivityService.isOffline) return;
     if (_pendingUploads.isEmpty) return;
 
-    debugPrint('Auto-Sync: Syncing \ pending items to backend...');
+    debugPrint('Auto-Sync: Syncing  pending items to backend...');
     
     // Simulate sync
     await Future.delayed(const Duration(seconds: 1));

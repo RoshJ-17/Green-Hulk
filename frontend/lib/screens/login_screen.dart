@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
@@ -29,8 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
-    for (final c in _otpControllers) c.dispose();
-    for (final f in _otpFocusNodes) f.dispose();
+    for (final c in _otpControllers) {
+      c.dispose();
+    }
+    for (final f in _otpFocusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -134,7 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
     await AuthService.sendOtp(_phone);
     if (!mounted) return;
     setState(() => _isLoadingStep2 = false);
-    for (final c in _otpControllers) c.clear();
+    for (final c in _otpControllers) {
+      c.clear();
+    }
     _otpFocusNodes[0].requestFocus();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('OTP resent!'), backgroundColor: AppTheme.primaryGreen),

@@ -7,7 +7,6 @@ import '../services/voice_search_service.dart';
 import '../services/audio_service.dart';
 import '../services/connectivity_service.dart';
 import 'scan_camera_screen.dart';
-import '../models/scan_result.dart';
 
 // Keep the local alias so the rest of the file compiles without renaming.
 const crops = kCrops;

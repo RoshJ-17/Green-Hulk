@@ -231,8 +231,9 @@ class AIModelService {
     final avg = sum / (src.width * src.height);
 
     final double gamma;
-    if      (avg < 80)  gamma = 0.55;
-    else if (avg < 120) gamma = 0.75;
+    if      (avg < 80) {
+      gamma = 0.55;
+    } else if (avg < 120) gamma = 0.75;
     else return src;
 
     for (int y = 0; y < src.height; y++) {

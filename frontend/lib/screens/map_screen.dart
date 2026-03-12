@@ -852,7 +852,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
 
   Widget _dropdown(String label, List<String> items, String val, void Function(String?) cb) =>
     DropdownButtonFormField<String>(
-      value: val,
+      initialValue: val,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -1109,7 +1109,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                       SizedBox(
                         width: 110,
                         child: DropdownButtonFormField<String>(
-                          value: _writeTipCrop,
+                          initialValue: _writeTipCrop,
                           isDense: true,
                           decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
                           items: ['Tomato','Wheat','Rice','Corn','Potato','Pepper']

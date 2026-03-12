@@ -1,5 +1,6 @@
 // lib/widgets/weather_advisory_card.dart
 import 'package:flutter/material.dart';
+import 'package:location/location.dart' as loc;
 import '../services/weather_service.dart';
 
 /// A card that shows spray-weather advisories on the treatment screen.
@@ -23,7 +24,23 @@ class _WeatherAdvisoryCardState extends State<WeatherAdvisoryCard> {
 
   Future<void> _fetchWeather() async {
     try {
-      final advisory = await WeatherService.getSprayAdvisory();
+      double? lat, lng;
+      try {
+        final location = loc.Location();
+        final perm = await location.hasPermission();
+        if (perm == loc.PermissionStatus.granted ||
+            perm == loc.PermissionStatus.grantedLimited) {
+          final locData = await location.getLocation();
+          lat = locData.latitude;
+          lng = locData.longitude;
+        }
+      } catch (_) {
+        // Fall through to IP-based lookup
+      }
+      final advisory = await WeatherService.getSprayAdvisory(
+        latitude: lat,
+        longitude: lng,
+      );
       if (mounted) {
         setState(() {
           _advisory = advisory;
